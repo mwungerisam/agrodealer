@@ -29,7 +29,8 @@ interface Product {
   status: boolean;
 }
 
-const empty = { name: "", category: "ifumbire" as const, buying_price: 0, selling_price: 0, unit: "kg", status: true };
+type Form = { name: string; category: "ifumbire" | "imbuto"; buying_price: number; selling_price: number; unit: string; status: boolean };
+const empty: Form = { name: "", category: "ifumbire", buying_price: 0, selling_price: 0, unit: "kg", status: true };
 
 function ProductsPage() {
   const { role } = useAuth();
