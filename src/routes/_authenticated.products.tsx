@@ -41,7 +41,7 @@ function ProductsPage() {
   const [cat, setCat] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState<typeof empty>(empty);
+  const [form, setForm] = useState<Form>(empty);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
