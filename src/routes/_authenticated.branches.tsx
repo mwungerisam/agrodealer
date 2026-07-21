@@ -1,0 +1,186 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { t } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
+import { Navigate } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/_authenticated/branches")({
+  component: BranchesPage,
+});
+
+interface Branch {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  status: boolean;
+}
+
+function BranchesPage() {
+  const { role } = useAuth();
+  if (role && role.role !== "owner") return <Navigate to="/dashboard" replace />;
+
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Branch | null>(null);
+  const [form, setForm] = useState({ name: "", phone: "", address: "", status: true });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ["branches"],
+    queryFn: async () => {
+      const { data } = await supabase.from("branches").select("*").order("created_at", { ascending: false });
+      return (data ?? []) as Branch[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!form.name.trim()) throw new Error(t.requiredField);
+      if (editing) {
+        const { error } = await supabase.from("branches").update(form).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("branches").insert(form);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing ? t.updated : t.saved);
+      qc.invalidateQueries({ queryKey: ["branches"] });
+      setOpen(false);
+      setEditing(null);
+      setForm({ name: "", phone: "", address: "", status: true });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("branches").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t.deleted);
+      qc.invalidateQueries({ queryKey: ["branches"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const filtered = branches.filter((b) => b.name.toLowerCase().includes(search.toLowerCase()));
+
+  const openNew = () => {
+    setEditing(null);
+    setForm({ name: "", phone: "", address: "", status: true });
+    setOpen(true);
+  };
+  const openEdit = (b: Branch) => {
+    setEditing(b);
+    setForm({ name: b.name, phone: b.phone ?? "", address: b.address ?? "", status: b.status });
+    setOpen(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">{t.branches}</h1>
+          <p className="text-sm text-muted-foreground">Cunga amashami y'ubucuruzi</p>
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openNew}>
+              <Plus className="mr-2 h-4 w-4" /> {t.add}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editing ? t.edit : t.add} {t.branch}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t.name} *</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t.phone}</Label>
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t.address}</Label>
+                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.status} onCheckedChange={(v) => setForm({ ...form, status: v })} />
+                <Label>{form.status ? t.active : t.inactive}</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t.cancel}</Button>
+              <Button onClick={() => save.mutate()} disabled={save.isPending}>{t.save}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t.name}</TableHead>
+                <TableHead>{t.phone}</TableHead>
+                <TableHead>{t.address}</TableHead>
+                <TableHead>{t.status}</TableHead>
+                <TableHead className="text-right">{t.actions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell className="font-medium">{b.name}</TableCell>
+                    <TableCell>{b.phone ?? "—"}</TableCell>
+                    <TableCell>{b.address ?? "—"}</TableCell>
+                    <TableCell>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.status ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                        {b.status ? t.active : t.inactive}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => {
+                        if (confirm(t.confirmDelete)) del.mutate(b.id);
+                      }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
