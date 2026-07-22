@@ -13,6 +13,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { SetupBanner } from "@/components/setup-banner";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   component: PurchasesPage,
@@ -160,6 +161,17 @@ function PurchasesPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <SetupBanner
+        steps={[
+          ...(branches.length === 0
+            ? [{ message: "Banza wongereho ishami muri Amashami mbere yo kurangura.", to: "/branches", label: t.branches }]
+            : []),
+          ...(products.length === 0
+            ? [{ message: "Banza wongereho igicuruzwa muri Ibicuruzwa mbere yo kurangura.", to: "/products", label: t.products }]
+            : []),
+        ]}
+      />
 
       <Card>
         <CardHeader />
