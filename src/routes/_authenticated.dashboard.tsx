@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { t, money, fmtDate } from "@/lib/i18n";
 import { TrendingUp, Boxes, AlertTriangle, DollarSign, Building2, Package } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { SetupBanner } from "@/components/setup-banner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -80,6 +81,22 @@ function Dashboard() {
         <h1 className="text-3xl font-bold tracking-tight">{t.dashboard}</h1>
         <p className="text-sm text-muted-foreground">Incamake y'ibikorwa by'uyu munsi</p>
       </div>
+
+      {isOwner && (
+        <SetupBanner
+          steps={[
+            ...(stats && stats.branchCount === 0
+              ? [{ message: "Intambwe 1: Ongeraho ishami rya mbere.", to: "/branches", label: t.branches }]
+              : []),
+            ...(stats && stats.productCount === 0
+              ? [{ message: "Intambwe 2: Ongeraho igicuruzwa cya mbere.", to: "/products", label: t.products }]
+              : []),
+            ...(stats && stats.branchCount > 0 && stats.productCount > 0 && stats.totalStock === 0
+              ? [{ message: "Intambwe 3: Andika kurangura kugira ngo uzuze ububiko.", to: "/purchases", label: t.purchases }]
+              : []),
+          ]}
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
