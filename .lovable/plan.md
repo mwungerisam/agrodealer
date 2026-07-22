@@ -1,63 +1,48 @@
-# UFBC AGRODEALER — Build Plan
+## Goal
+Explain step-by-step how to enable the "Ongeraho" button on Kurangura and add stock, AND add helpful empty-state hints in the UI so future users aren't stuck.
 
-Private inventory & sales system for one fertilizer/seed business in Rwanda. Kinyarwanda UI, two roles (Owner, Manager), multi-branch.
+## How to make it work (do this now in the running app)
 
-## Stack
-- TanStack Start + React + Tailwind v4 + shadcn
-- Lovable Cloud (Postgres + Auth) for backend
-- Email/password auth (single business — no Google needed unless you want it)
-- PDF export via jsPDF + autotable
+The "Ongeraho" button on **Kurangura** stays disabled until BOTH a branch and a product exist. Follow in order:
 
-## Database schema
+**Step 1 — Add a branch (Amashami)**
+1. Click **Amashami** in the left sidebar.
+2. Click **Ongeraho** (top right).
+3. Fill in: **Izina** (required, e.g. "Kigali Main"), Telefone, Aderesi.
+4. Leave **Active** switch on.
+5. Click **Bika**.
 
-```text
-profiles(id → auth.users, full_name, phone, created_at)
-user_roles(user_id, role: 'owner'|'manager', branch_id nullable)
-branches(id, name, phone, address, status, created_at)
-products(id, name, category: 'ifumbire'|'imbuto', buying_price, selling_price, unit, status)
-purchases(id, branch_id, supplier, product_id, quantity, buying_price, transport_cost, purchase_date, created_by)
-sales(id, branch_id, product_id, quantity, selling_price, unit_cost, profit, sale_date, created_by)
-inventory(branch_id, product_id, quantity)  -- current stock per branch
-inventory_movements(id, branch_id, product_id, type: 'in'|'out', quantity, ref_type, ref_id, created_at)
-expenses(id, branch_id, description, amount, expense_date, created_by)
-```
+**Step 2 — Add a product (Ibicuruzwa)**
+1. Click **Ibicuruzwa** in the sidebar.
+2. Click **Ongeraho**.
+3. Fill in: Izina (e.g. "DAP"), Category (Ifumbire / Imbuto), Unit (kg, sac…), Buying Price, Selling Price.
+4. Click **Bika**.
 
-- Triggers: on purchase insert → +stock + movement; on sale insert → check stock, -stock, compute profit, + movement.
-- `has_role(uid, role)` security-definer function for RLS.
-- RLS: owner sees all; manager sees only their assigned branch data.
+**Step 3 — Record a purchase to add stock (Kurangura)**
+1. Click **Kurangura**. The **Ongeraho** button is now enabled.
+2. Click **Ongeraho**.
+3. Select **Ishami** (branch), **Igicuruzwa** (product), type **Umuranguzi** (supplier), **Ingano** (quantity), Buying Price (auto-filled), Transport Cost, Date.
+4. Click **Bika** → stock automatically increases in **Ububiko**.
 
-## Modules (all Kinyarwanda UI)
+**Step 4 — Verify stock**
+- Open **Ububiko** to see updated quantities.
 
-1. **Auth** — Injira / Iyandikishe. First registered user auto-becomes owner (seed via trigger when `user_roles` empty).
-2. **Ikibaho (Dashboard)** — today's sales, today's profit, remaining stock, low stock, recent transactions.
-3. **Amashami (Branches)** — Owner CRUD.
-4. **Ibicuruzwa (Products)** — Owner CRUD, category filter.
-5. **Kurangura (Purchases)** — Form + list; auto stock-in.
-6. **Kugurisha (Sales)** — Form + list; auto stock-out + profit.
-7. **Ububiko (Inventory)** — Per branch stock view, movements.
-8. **Ibyakoreshejwe (Expenses)** — simple list + form.
-9. **Raporo (Reports)** — Daily & monthly, PDF download.
-10. **Abakoresha (Users)** — Owner assigns managers to branches.
+**Step 5 — Sell (Kugurisha)** — reduces stock and computes profit automatically.
 
-## Layout
-- Collapsible sidebar (shadcn) with Kinyarwanda labels + Lucide icons
-- Top header with branch switcher (owner) / branch label (manager) + logout
-- Design: clean, soft radii, muted green accent (agriculture feel), professional cards & tables
+## UI improvement to build
 
-## Validation & errors
-- Zod schemas on all forms; Kinyarwanda error messages
-- Stock guard on sale (DB trigger + client check)
-- Toasts in Kinyarwanda
+Add small empty-state hints so the flow is obvious without asking:
 
-## Files to create (high-level)
-- `src/routes/_authenticated/` layout + module pages
-- `src/routes/auth.tsx`
-- `src/components/app-sidebar.tsx`, `src/components/branch-switcher.tsx`
-- `src/lib/queries/*.functions.ts` (server fns per module)
-- `src/lib/pdf.ts` (report generator)
-- Migrations for schema + RLS + triggers
+1. **Kurangura page** — when the Ongeraho button is disabled, show a yellow banner above the table:
+   - If no branches: "Banza wongereho ishami muri Amashami" + link button to /branches.
+   - If no products: "Banza wongereho igicuruzwa muri Ibicuruzwa" + link button to /products.
+2. **Kugurisha page** — same pattern (needs branch + product + stock).
+3. **Dashboard** — if branches or products list is empty, show a "Tangira hano" card with 3 numbered steps linking to Amashami → Ibicuruzwa → Kurangura.
 
-## Out of scope (per spec)
-No AI, barcode, notifications, accounting, or debt tracking. Excel export deferred (report data structured to enable it later).
+## Files to edit
+- `src/routes/_authenticated.purchases.tsx` — add empty-state banner.
+- `src/routes/_authenticated.sales.tsx` — same.
+- `src/routes/_authenticated.dashboard.tsx` — add onboarding card when empty.
 
-Proceeding will enable Lovable Cloud and scaffold in phases: DB → Auth → Layout → CRUD modules → Reports.
+## Out of scope
+No schema changes, no new routes, no logic changes to purchases/sales triggers.
