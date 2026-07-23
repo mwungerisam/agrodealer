@@ -74,7 +74,6 @@ function AuthPage() {
             <Sprout className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{t.appName}</h1>
-          <p className="text-sm text-muted-foreground">{t.tagline}</p>
         </div>
 
         <Card className="shadow-xl">
