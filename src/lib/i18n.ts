@@ -14,7 +14,7 @@ export const t = {
   haveAccount: "Usanzwe ufite konti?",
   noAccount: "Nta konti ufite?",
   welcome: "Murakaza neza",
-  signInDesc: "Injira mu bwiyandikishe bwawe",
+  signInDesc: "Injira cyangwa wiyandikishe",
   signUpDesc: "Iyandikishe kugira ngo utangire",
 
   // Nav
