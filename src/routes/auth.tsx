@@ -19,11 +19,25 @@ function AuthPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"in" | "up">("in");
+  const [mode, setMode] = useState<"auth" | "forgot">("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const sendReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return toast.error(t.requiredField);
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Twakoherereje email yo guhindura ijambo ry'ibanga");
+    setMode("auth");
+  };
 
   useEffect(() => {
     if (user && !authLoading) navigate({ to: "/dashboard", replace: true });
