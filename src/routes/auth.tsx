@@ -81,109 +81,157 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-3 sm:p-4">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-            <Sprout className="h-7 w-7" />
+        <div className="mb-4 flex flex-col items-center text-center sm:mb-6">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg sm:h-14 sm:w-14">
+            <Sprout className="h-6 w-6 sm:h-7 sm:w-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">{t.appName}</h1>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{t.appName}</h1>
         </div>
 
         <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle>{tab === "in" ? t.signIn : t.signUp}</CardTitle>
-            <CardDescription>
-              {tab === "in" ? t.signInDesc : t.signUpDesc}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "in" | "up")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="in">{t.signIn}</TabsTrigger>
-                <TabsTrigger value="up">{t.signUp}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="in">
-                <form onSubmit={signIn} className="space-y-4 pt-4">
+          {mode === "forgot" ? (
+            <>
+              <CardHeader>
+                <CardTitle>Wibagiwe ijambo ry'ibanga?</CardTitle>
+                <CardDescription>
+                  Andika email yawe. Tuzakoherereza link yo guhindura ijambo ry'ibanga.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={sendReset} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="in-email">{t.email}</Label>
+                    <Label htmlFor="fp-email">{t.email}</Label>
                     <Input
-                      id="in-email"
+                      id="fp-email"
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="in-pw">{t.password}</Label>
-                    <Input
-                      id="in-pw"
-                      type="password"
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
                   <Button type="submit" className="w-full" disabled={busy}>
                     {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t.signIn}
+                    Ohereza link
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setMode("auth")}
+                  >
+                    Subira inyuma
                   </Button>
                 </form>
-              </TabsContent>
+              </CardContent>
+            </>
+          ) : (
+            <>
+              <CardHeader>
+                <CardTitle>{tab === "in" ? t.signIn : t.signUp}</CardTitle>
+                <CardDescription>
+                  {tab === "in" ? t.signInDesc : t.signUpDesc}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={tab} onValueChange={(v) => setTab(v as "in" | "up")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="in">{t.signIn}</TabsTrigger>
+                    <TabsTrigger value="up">{t.signUp}</TabsTrigger>
+                  </TabsList>
 
-              <TabsContent value="up">
-                <form onSubmit={signUp} className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="up-name">{t.fullName}</Label>
-                    <Input
-                      id="up-name"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="up-phone">{t.phone}</Label>
-                    <Input
-                      id="up-phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="up-email">{t.email}</Label>
-                    <Input
-                      id="up-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="up-pw">{t.password}</Label>
-                    <Input
-                      id="up-pw"
-                      type="password"
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={busy}>
-                    {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t.signUp}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
+                  <TabsContent value="in">
+                    <form onSubmit={signIn} className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="in-email">{t.email}</Label>
+                        <Input
+                          id="in-email"
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="in-pw">{t.password}</Label>
+                        <Input
+                          id="in-pw"
+                          type="password"
+                          required
+                          minLength={6}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setMode("forgot")}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Wibagiwe ijambo ry'ibanga?
+                        </button>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={busy}>
+                        {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {t.signIn}
+                      </Button>
+                    </form>
+                  </TabsContent>
+
+                  <TabsContent value="up">
+                    <form onSubmit={signUp} className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="up-name">{t.fullName}</Label>
+                        <Input
+                          id="up-name"
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="up-phone">{t.phone}</Label>
+                        <Input
+                          id="up-phone"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="up-email">{t.email}</Label>
+                        <Input
+                          id="up-email"
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="up-pw">{t.password}</Label>
+                        <Input
+                          id="up-pw"
+                          type="password"
+                          required
+                          minLength={6}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={busy}>
+                        {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {t.signUp}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </>
+          )}
         </Card>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+        <p className="mt-4 text-center text-xs text-muted-foreground sm:mt-6">
           © {new Date().getFullYear()} UFBC Agrodealer
         </p>
       </div>
