@@ -37,17 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!data) {
         try {
-          const { data: rpcData } = await (supabase.rpc as any)("ensure_user_role");
-          if (rpcData && typeof rpcData === "object" && "role" in rpcData && (rpcData as any).role) {
-            data = {
-              role: (rpcData as any).role,
-              branch_id: (rpcData as any).branch_id ?? null,
-            };
-          }
+          await (supabase.rpc as any)("ensure_user_role");
+          const { data: retry } = await supabase
+            .from("user_roles")
+            .select("role, branch_id")
+            .eq("user_id", uid)
+            .maybeSingle();
+          data = retry ?? null;
         } catch {
-          // Fallback if RPC is not yet executed
+          // Fallback if the role helper is unavailable
         }
       }
+
 
       setRole(
         data
