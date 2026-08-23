@@ -7,16 +7,48 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          branch_id: string | null
+          created_at: string
+          details: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          branch_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          branch_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
+          code: string | null
           created_at: string
           id: string
           name: string
@@ -25,6 +57,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          code?: string | null
           created_at?: string
           id?: string
           name: string
@@ -33,6 +66,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          code?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -40,6 +74,48 @@ export type Database = {
           status?: boolean
         }
         Relationships: []
+      }
+      customers: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -81,18 +157,21 @@ export type Database = {
       }
       inventory: {
         Row: {
+          avg_cost: number
           branch_id: string
           product_id: string
           quantity: number
           updated_at: string
         }
         Insert: {
+          avg_cost?: number
           branch_id: string
           product_id: string
           quantity?: number
           updated_at?: string
         }
         Update: {
+          avg_cost?: number
           branch_id?: string
           product_id?: string
           quantity?: number
@@ -168,9 +247,12 @@ export type Database = {
           buying_price: number
           category: Database["public"]["Enums"]["product_category"]
           created_at: string
+          description: string | null
           id: string
+          min_stock: number
           name: string
           selling_price: number
+          sku: string | null
           status: boolean
           unit: string
         }
@@ -178,9 +260,12 @@ export type Database = {
           buying_price: number
           category: Database["public"]["Enums"]["product_category"]
           created_at?: string
+          description?: string | null
           id?: string
+          min_stock?: number
           name: string
           selling_price: number
+          sku?: string | null
           status?: boolean
           unit?: string
         }
@@ -188,9 +273,12 @@ export type Database = {
           buying_price?: number
           category?: Database["public"]["Enums"]["product_category"]
           created_at?: string
+          description?: string | null
           id?: string
+          min_stock?: number
           name?: string
           selling_price?: number
+          sku?: string | null
           status?: boolean
           unit?: string
         }
@@ -276,18 +364,24 @@ export type Database = {
           branch_id: string
           created_at: string
           created_by: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           id: string
           product_id: string
           profit: number
           quantity: number
           sale_date: string
-          selling_price: number
           unit_cost: number
+          selling_price: number
         }
         Insert: {
           branch_id: string
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           product_id: string
           profit?: number
@@ -300,6 +394,9 @@ export type Database = {
           branch_id?: string
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           product_id?: string
           profit?: number
@@ -317,10 +414,65 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sales_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_targets: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          period_date: string
+          period_type: string
+          target_amount: number
+          user_id: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          period_date: string
+          period_type: string
+          target_amount: number
+          user_id?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          period_date?: string
+          period_type?: string
+          target_amount?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_targets_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_targets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -362,17 +514,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      current_branch: { Args: never; Returns: string }
-      current_role: {
-        Args: never
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_role: {
+      adjust_stock: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
+          p_branch_id: string
+          p_product_id: string
+          p_new_quantity: number
+          p_reason: string
         }
+        Returns: undefined
+      }
+      current_branch: { Args: never; Returns: string }
+      current_role: { Args: never; Returns: Database["public"]["Enums"]["app_role"] }
+      has_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"]; _user_id: string }
         Returns: boolean
+      }
+      transfer_stock: {
+        Args: {
+          p_from_branch: string
+          p_to_branch: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
@@ -380,9 +545,7 @@ export type Database = {
       movement_type: "in" | "out"
       product_category: "ifumbire" | "imbuto"
     }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    CompositeTypes: { [_ in never]: never }
   }
 }
 
@@ -411,8 +574,7 @@ export type Tables<
     : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
         DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R

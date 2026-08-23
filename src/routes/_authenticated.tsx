@@ -1,6 +1,23 @@
 import { createFileRoute, Outlet, Navigate, Link, useRouterState } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth-context";
-import { Loader2, LogOut, LayoutDashboard, Building2, Package, ShoppingCart, TrendingUp, Boxes, FileText, Wallet, Users, Sprout } from "lucide-react";
+import { useAuth, useIsOwner } from "@/lib/auth-context";
+import {
+  Loader2,
+  LogOut,
+  LayoutDashboard,
+  Building2,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Boxes,
+  FileText,
+  Wallet,
+  Users,
+  Sprout,
+  UserCheck,
+  Target,
+  Shield,
+  ArrowLeftRight,
+} from "lucide-react";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,20 +26,9 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-const NAV = [
-  { to: "/dashboard", label: t.dashboard, icon: LayoutDashboard, ownerOnly: false },
-  { to: "/branches", label: t.branches, icon: Building2, ownerOnly: true },
-  { to: "/products", label: t.products, icon: Package, ownerOnly: true },
-  { to: "/purchases", label: t.purchases, icon: ShoppingCart, ownerOnly: false },
-  { to: "/sales", label: t.sales, icon: TrendingUp, ownerOnly: false },
-  { to: "/inventory", label: t.inventory, icon: Boxes, ownerOnly: false },
-  { to: "/expenses", label: t.expenses, icon: Wallet, ownerOnly: false },
-  { to: "/reports", label: t.reports, icon: FileText, ownerOnly: false },
-  { to: "/users", label: t.users, icon: Users, ownerOnly: true },
-] as const;
-
 function AuthenticatedLayout() {
-  const { user, loading, role, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const isOwner = useIsOwner();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {
@@ -34,16 +40,40 @@ function AuthenticatedLayout() {
   }
   if (!user) return <Navigate to="/auth" replace />;
 
-  const isOwner = role?.role === "owner";
-  const visible = NAV.filter((n) => !n.ownerOnly || isOwner);
+  const workerNav = [
+    { to: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
+    { to: "/sales", label: t.sales, icon: TrendingUp },
+    { to: "/inventory", label: t.inventory, icon: Boxes },
+    { to: "/purchases", label: t.purchases, icon: ShoppingCart },
+    { to: "/reports", label: t.reports, icon: FileText },
+  ];
+
+  const adminNav = [
+    { to: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
+    { to: "/branches", label: t.branches, icon: Building2 },
+    { to: "/transfers", label: t.transfers, icon: ArrowLeftRight },
+    { to: "/products", label: t.products, icon: Package },
+    { to: "/purchases", label: t.purchases, icon: ShoppingCart },
+    { to: "/sales", label: t.sales, icon: TrendingUp },
+    { to: "/inventory", label: t.inventory, icon: Boxes },
+    { to: "/expenses", label: t.expenses, icon: Wallet },
+    { to: "/customers", label: t.customers, icon: UserCheck },
+    { to: "/users", label: t.users, icon: Users },
+    { to: "/targets", label: t.targets, icon: Target },
+    { to: "/audit", label: t.audit, icon: Shield },
+    { to: "/reports", label: t.reports, icon: FileText },
+  ];
+
+  const nav = isOwner ? adminNav : workerNav;
 
   const handleSignOut = async () => {
     await signOut();
-    toast.success("Wasohotse neza");
+    toast.success("Nibyo gukora neza");
   };
 
   return (
     <div className="flex min-h-screen bg-muted/30">
+      {/* Desktop sidebar */}
       <aside className="hidden w-64 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -55,7 +85,7 @@ function AuthenticatedLayout() {
           </div>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {visible.map((n) => {
+          {nav.map((n) => {
             const active = pathname === n.to || pathname.startsWith(n.to + "/");
             return (
               <Link
@@ -77,7 +107,7 @@ function AuthenticatedLayout() {
           <div className="mb-2 px-2 text-xs text-sidebar-foreground/70">
             {user.email}
             <div className="mt-0.5 inline-flex items-center rounded-full bg-sidebar-primary/20 px-2 py-0.5 text-[10px] font-semibold text-sidebar-primary-foreground/90">
-              {isOwner ? t.owner : t.manager}
+              {isOwner ? t.owner : t.worker}
             </div>
           </div>
           <Button
@@ -109,7 +139,7 @@ function AuthenticatedLayout() {
         <div className="md:hidden h-12" />
         {/* Mobile nav strip */}
         <div className="scrollbar-none flex overflow-x-auto border-b bg-card px-2 md:hidden">
-          {visible.map((n) => {
+          {nav.map((n) => {
             const active = pathname === n.to;
             return (
               <Link

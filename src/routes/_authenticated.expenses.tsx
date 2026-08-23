@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, fmtDate } from "@/lib/i18n";
+import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
@@ -48,7 +48,7 @@ function ExpensesPage() {
       if (!form.branch_id) throw new Error(t.chooseBranch);
       if (!form.description.trim()) throw new Error(t.requiredField);
       if (form.amount < 0) throw new Error(t.invalidNumber);
-      const { error } = await supabase.from("expenses").insert({ ...form, amount: Number(form.amount), created_by: user?.id ?? null });
+      const { error } = await supabase.from("expenses").insert({ ...form, description: form.description.trim(), amount: Number(form.amount), created_by: user?.id ?? null });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -57,7 +57,7 @@ function ExpensesPage() {
       setOpen(false);
       setForm({ ...form, description: "", amount: 0 });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const del = useMutation({
@@ -66,7 +66,7 @@ function ExpensesPage() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success(t.deleted); qc.invalidateQueries({ queryKey: ["expenses"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   return (

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, fmtDate } from "@/lib/i18n";
+import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
 
@@ -84,7 +84,7 @@ function PurchasesPage() {
       setOpen(false);
       setForm({ ...form, product_id: "", supplier: "", quantity: 0, buying_price: 0, transport_cost: 0 });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const del = useMutation({
@@ -93,7 +93,7 @@ function PurchasesPage() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success(t.deleted); qc.invalidateQueries({ queryKey: ["purchases"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   return (

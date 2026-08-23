@@ -5,11 +5,17 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Sprout } from "lucide-react";
-import { t } from "@/lib/i18n";
+import { Loader2, Sprout, Eye, EyeOff } from "lucide-react";
+import { t, formatAuthError } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -24,18 +30,20 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const sendReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return toast.error(t.requiredField);
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return toast.error(t.requiredField);
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Twakoherereje email yo guhindura ijambo ry'ibanga");
+    if (error) return toast.error(formatAuthError(error));
+    toast.success(t.resetLinkSent);
     setMode("auth");
   };
 
@@ -54,30 +62,60 @@ function AuthPage() {
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return toast.error(t.requiredField);
+    if (!password) return toast.error(t.requiredField);
+
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success(t.welcome);
-    navigate({ to: "/dashboard", replace: true });
+
+    if (error) {
+      toast.error(formatAuthError(error));
+      return;
+    }
+
+    if (data?.session) {
+      toast.success(t.welcome);
+      navigate({ to: "/dashboard", replace: true });
+    }
   };
 
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) return toast.error(t.requiredField);
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phone.trim();
+
+    if (!cleanName || !cleanEmail) return toast.error(t.requiredField);
+    if (password.length < 6) return toast.error(t.passwordTooShort);
+
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: fullName, phone },
+        data: { full_name: cleanName, phone: cleanPhone },
       },
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success(t.saved);
-    navigate({ to: "/dashboard", replace: true });
+
+    if (error) {
+      toast.error(formatAuthError(error));
+      return;
+    }
+
+    if (data?.session) {
+      toast.success(t.welcome);
+      navigate({ to: "/dashboard", replace: true });
+    } else {
+      toast.success(t.signUpSuccessEmailSent);
+      setTab("in");
+    }
   };
 
   return (
@@ -94,9 +132,9 @@ function AuthPage() {
           {mode === "forgot" ? (
             <>
               <CardHeader>
-                <CardTitle>Wibagiwe ijambo ry'ibanga?</CardTitle>
+                <CardTitle>{t.forgotPassword}</CardTitle>
                 <CardDescription>
-                  Andika email yawe. Tuzakoherereza link yo guhindura ijambo ry'ibanga.
+                  {t.sendResetLink}: {t.email} yawe.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -113,7 +151,7 @@ function AuthPage() {
                   </div>
                   <Button type="submit" className="w-full" disabled={busy}>
                     {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Ohereza link
+                    {t.sendResetLink}
                   </Button>
                   <Button
                     type="button"
@@ -121,7 +159,7 @@ function AuthPage() {
                     className="w-full"
                     onClick={() => setMode("auth")}
                   >
-                    Subira inyuma
+                    {t.backToAuth}
                   </Button>
                 </form>
               </CardContent>
@@ -135,7 +173,10 @@ function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs value={tab} onValueChange={(v) => setTab(v as "in" | "up")}>
+                <Tabs
+                  value={tab}
+                  onValueChange={(v) => setTab(v as "in" | "up")}
+                >
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="in">{t.signIn}</TabsTrigger>
                     <TabsTrigger value="up">{t.signUp}</TabsTrigger>
@@ -155,23 +196,38 @@ function AuthPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="in-pw">{t.password}</Label>
-                        <Input
-                          id="in-pw"
-                          type="password"
-                          required
-                          minLength={6}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => setMode("forgot")}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          Wibagiwe ijambo ry'ibanga?
-                        </button>
+                        <div className="relative">
+                          <Input
+                            id="in-pw"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            minLength={6}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setMode("forgot")}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {t.forgotPassword}
+                          </button>
+                        </div>
                       </div>
                       <Button type="submit" className="w-full" disabled={busy}>
                         {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -211,14 +267,32 @@ function AuthPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="up-pw">{t.password}</Label>
-                        <Input
-                          id="up-pw"
-                          type="password"
-                          required
-                          minLength={6}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <div className="relative">
+                          <Input
+                            id="up-pw"
+                            type={showPassword ? "text" : "password"}
+                            required
+                            minLength={6}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t.passwordHint}
+                        </p>
                       </div>
                       <Button type="submit" className="w-full" disabled={busy}>
                         {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

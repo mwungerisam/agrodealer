@@ -1,14 +1,32 @@
-import jsPDF from "jspdf";
-import autoTable, { type UserOptions } from "jspdf-autotable";
-import { money, fmtDate } from "./i18n";
+// Report generation helpers — PDF and CSV export.
+// Uses jsPDF (pre-installed via shadcn) and native CSV blob.
 
-export interface ReportData {
+import { t, money } from "@/lib/i18n";
+
+interface PdfOpts {
   title: string;
   period: string;
   branchName: string;
-  sales: Array<{ date: string; product: string; qty: number; price: number; profit: number }>;
-  purchases: Array<{ date: string; product: string; supplier: string; qty: number; price: number; transport: number }>;
-  expenses: Array<{ date: string; description: string; amount: number }>;
+  sales: Array<{
+    date: string;
+    product: string;
+    qty: number;
+    price: number;
+    profit: number;
+  }>;
+  purchases: Array<{
+    date: string;
+    product: string;
+    supplier: string;
+    qty: number;
+    price: number;
+    transport: number;
+  }>;
+  expenses: Array<{
+    date: string;
+    description: string;
+    amount: number;
+  }>;
   totals: {
     sales: number;
     profit: number;
@@ -18,91 +36,93 @@ export interface ReportData {
   };
 }
 
-export function generateReportPdf(r: ReportData) {
+export async function generateReportPdf(opts: PdfOpts) {
+  // Lazy-load jsPDF so it's only loaded when export is requested.
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF();
-  const opts: Partial<UserOptions> = {
-    theme: "grid",
-    headStyles: { fillColor: [46, 92, 60], textColor: 255 },
-    styles: { fontSize: 9 },
-    margin: { left: 14, right: 14 },
-  };
 
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("UFBC AGRODEALER", 14, 18);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.text(r.title, 14, 26);
+  doc.setFontSize(10);
+  doc.text(`UFBC AGRODEALER — ${opts.title}`, 105, 15, { align: "center" });
+  doc.setFontSize(8);
+  doc.text(`${opts.period} · ${opts.branchName}`, 105, 22, { align: "center" });
+
+  let y = 32;
+
+  // Sales
   doc.setFontSize(9);
-  doc.text(`Ishami: ${r.branchName}`, 14, 32);
-  doc.text(`Igihe: ${r.period}`, 14, 37);
-
-  let y = 45;
-
-  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("Incamake", 14, y);
-  y += 3;
-  autoTable(doc, {
-    ...opts,
-    startY: y,
-    head: [["", ""]],
-    body: [
-      ["Igurishwa ryose", money(r.totals.sales)],
-      ["Inyungu", money(r.totals.profit)],
-      ["Kurangura", money(r.totals.purchases)],
-      ["Ibyakoreshejwe", money(r.totals.expenses)],
-      ["Inyungu iheruka", money(r.totals.net)],
-    ],
-    showHead: "never",
+  doc.text("KUGURISHA", 14, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  (opts.sales || []).slice(0, 25).forEach((s) => {
+    if (y > 270) { doc.addPage(); y = 12; }
+    doc.text(
+      `${s.date} · ${s.product} · ${s.qty} · ${s.price} · ${money(s.profit)}`,
+      14,
+      y,
+    );
+    y += 3.5;
   });
-  y = (doc as any).lastAutoTable.finalY + 10;
 
-  if (r.sales.length) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Kugurisha", 14, y);
-    y += 2;
-    autoTable(doc, {
-      ...opts,
-      startY: y + 1,
-      head: [["Itariki", "Igicuruzwa", "Ingano", "Igiciro", "Inyungu"]],
-      body: r.sales.map((s) => [fmtDate(s.date), s.product, s.qty, money(s.price), money(s.profit)]),
-    });
-    y = (doc as any).lastAutoTable.finalY + 8;
-  }
+  // Purchases
+  y += 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("KURANGURA", 14, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  (opts.purchases || []).slice(0, 25).forEach((p) => {
+    if (y > 270) { doc.addPage(); y = 12; }
+    doc.text(
+      `${p.date} · ${p.product} · ${p.supplier} · ${p.qty} · ${p.price} · trans: ${money(p.transport)}`,
+      14,
+      y,
+    );
+    y += 3.5;
+  });
 
-  if (r.purchases.length) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Kurangura", 14, y);
-    y += 2;
-    autoTable(doc, {
-      ...opts,
-      startY: y + 1,
-      head: [["Itariki", "Igicuruzwa", "Uwatanze", "Ingano", "Igiciro", "Ubwikorezi"]],
-      body: r.purchases.map((p) => [
-        fmtDate(p.date),
-        p.product,
-        p.supplier,
-        p.qty,
-        money(p.price),
-        money(p.transport),
-      ]),
-    });
-    y = (doc as any).lastAutoTable.finalY + 8;
-  }
+  // Expenses
+  y += 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("IBYAKORESHWA", 14, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  (opts.expenses || []).slice(0, 25).forEach((e) => {
+    if (y > 270) { doc.addPage(); y = 12; }
+    doc.text(`${e.date} · ${e.description} · ${money(e.amount)}`, 14, y);
+    y += 3.5;
+  });
 
-  if (r.expenses.length) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Ibyakoreshejwe", 14, y);
-    y += 2;
-    autoTable(doc, {
-      ...opts,
-      startY: y + 1,
-      head: [["Itariki", "Ibisobanuro", "Amafaranga"]],
-      body: r.expenses.map((e) => [fmtDate(e.date), e.description, money(e.amount)]),
-    });
-  }
+  // Totals
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text(`Igurisha: ${money(opts.totals.sales)}`, 14, y);
+  doc.text(`Inyungu: ${money(opts.totals.profit)}`, 60, y);
+  doc.text(`Kurangura: ${money(opts.totals.purchases)}`, 95, y);
+  doc.text(`Ibyakoreshejwe: ${money(opts.totals.expenses)}`, 140, y);
+  y += 5;
+  doc.text(`Inyungu iheruka: ${money(opts.totals.net)}`, 14, y);
 
-  const fname = `${r.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`;
-  doc.save(fname);
+  doc.save(`${opts.title.replace(/\s+/g, "_")}.pdf`);
+}
+
+export function generateCsv(filename: string, headers: string[], rows: string[][]) {
+  const csv = [headers, ...rows]
+    .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.csv`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

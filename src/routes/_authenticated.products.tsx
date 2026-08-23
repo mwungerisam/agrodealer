@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
-import { t, money } from "@/lib/i18n";
+import { t, money, formatErrorMessage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -29,8 +29,22 @@ interface Product {
   status: boolean;
 }
 
-type Form = { name: string; category: "ifumbire" | "imbuto"; buying_price: number; selling_price: number; unit: string; status: boolean };
-const empty: Form = { name: "", category: "ifumbire", buying_price: 0, selling_price: 0, unit: "kg", status: true };
+type Form = {
+  name: string;
+  category: "ifumbire" | "imbuto";
+  buying_price: number;
+  selling_price: number;
+  unit: string;
+  status: boolean;
+};
+const empty: Form = {
+  name: "",
+  category: "ifumbire",
+  buying_price: 0,
+  selling_price: 0,
+  unit: "kg",
+  status: true,
+};
 
 function ProductsPage() {
   const { role } = useAuth();
@@ -46,7 +60,10 @@ function ProductsPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("*").order("name");
+      const { data } = await supabase
+        .from("products")
+        .select("id, name, category, buying_price, selling_price, unit, status")
+        .order("name");
       return (data ?? []) as Product[];
     },
   });
@@ -55,7 +72,14 @@ function ProductsPage() {
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t.requiredField);
       if (form.buying_price < 0 || form.selling_price < 0) throw new Error(t.invalidNumber);
-      const payload = { ...form, buying_price: Number(form.buying_price), selling_price: Number(form.selling_price) };
+      const payload = {
+        name: form.name.trim(),
+        category: form.category,
+        buying_price: Number(form.buying_price),
+        selling_price: Number(form.selling_price),
+        unit: form.unit.trim() || "kg",
+        status: form.status,
+      };
       if (editing) {
         const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
         if (error) throw error;
@@ -67,9 +91,12 @@ function ProductsPage() {
     onSuccess: () => {
       toast.success(editing ? t.updated : t.saved);
       qc.invalidateQueries({ queryKey: ["products"] });
-      setOpen(false); setEditing(null); setForm(empty);
+      qc.invalidateQueries({ queryKey: ["products-active"] });
+      setOpen(false);
+      setEditing(null);
+      setForm(empty);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const del = useMutation({
@@ -77,20 +104,35 @@ function ProductsPage() {
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success(t.deleted); qc.invalidateQueries({ queryKey: ["products"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      toast.success(t.deleted);
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-active"] });
+    },
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const filtered = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) &&
-      (cat === "all" || p.category === cat)
+      (cat === "all" || p.category === cat),
   );
 
-  const openNew = () => { setEditing(null); setForm(empty); setOpen(true); };
+  const openNew = () => {
+    setEditing(null);
+    setForm(empty);
+    setOpen(true);
+  };
   const openEdit = (p: Product) => {
     setEditing(p);
-    setForm({ name: p.name, category: p.category, buying_price: p.buying_price, selling_price: p.selling_price, unit: p.unit, status: p.status });
+    setForm({
+      name: p.name,
+      category: p.category,
+      buying_price: p.buying_price,
+      selling_price: p.selling_price,
+      unit: p.unit,
+      status: p.status,
+    });
     setOpen(true);
   };
 
@@ -105,12 +147,14 @@ function ProductsPage() {
           <DialogTrigger asChild>
             <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> {t.add}</Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editing ? t.edit : t.add} {t.product}</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{editing ? t.edit : t.add} {t.product}</DialogTitle>
+            </DialogHeader>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>{t.name} *</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="space-y-2">
                 <Label>{t.category} *</Label>
@@ -187,7 +231,7 @@ function ProductsPage() {
                     <TableCell>{money(p.buying_price)}</TableCell>
                     <TableCell>{money(p.selling_price)}</TableCell>
                     <TableCell>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status ? "bg-green-100/50 text-green-800" : "bg-red-100/50 text-red-800"}`}>
                         {p.status ? t.active : t.inactive}
                       </span>
                     </TableCell>

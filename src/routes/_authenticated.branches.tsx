@@ -1,19 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
-import { t } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth-context";
-import { Navigate } from "@tanstack/react-router";
+import { t, money, formatErrorMessage } from "@/lib/i18n";
+import { useIsOwner } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/branches")({
   component: BranchesPage,
@@ -25,22 +24,32 @@ interface Branch {
   phone: string | null;
   address: string | null;
   status: boolean;
+  created_at: string;
 }
 
 function BranchesPage() {
-  const { role } = useAuth();
-  if (role && role.role !== "owner") return <Navigate to="/dashboard" replace />;
+  const isOwner = useIsOwner();
+  if (!isOwner) return <Navigate to="/dashboard" replace />;
 
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Branch | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", address: "", status: true });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    status: true,
+  });
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches"],
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("branches").select("*").order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("branches")
+        .select("id, name, phone, address, status, created_at")
+        .order("created_at", { ascending: false });
       return (data ?? []) as Branch[];
     },
   });
@@ -48,22 +57,29 @@ function BranchesPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t.requiredField);
+      const payload = {
+        name: form.name.trim(),
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        status: form.status,
+      };
       if (editing) {
-        const { error } = await supabase.from("branches").update(form).eq("id", editing.id);
+        const { error } = await supabase.from("branches").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("branches").insert(form);
+        const { error } = await supabase.from("branches").insert(payload);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       toast.success(editing ? t.updated : t.saved);
       qc.invalidateQueries({ queryKey: ["branches"] });
+      qc.invalidateQueries({ queryKey: ["branches-active"] });
       setOpen(false);
       setEditing(null);
       setForm({ name: "", phone: "", address: "", status: true });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const del = useMutation({
@@ -74,11 +90,15 @@ function BranchesPage() {
     onSuccess: () => {
       toast.success(t.deleted);
       qc.invalidateQueries({ queryKey: ["branches"] });
+      qc.invalidateQueries({ queryKey: ["branches-active"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
-  const filtered = branches.filter((b) => b.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = branches.filter((b) =>
+    (b.name?.toLowerCase() ?? "").includes(search.toLowerCase()) ||
+    (b.address?.toLowerCase() ?? "").includes(search.toLowerCase()),
+  );
 
   const openNew = () => {
     setEditing(null);
@@ -96,13 +116,11 @@ function BranchesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.branches}</h1>
-          <p className="text-sm text-muted-foreground">Cunga amashami y'ubucuruzi</p>
+          <p className="text-sm text-muted-foreground">Kugabanya n'guhindura amashami y'ubucuruzi</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew}>
-              <Plus className="mr-2 h-4 w-4" /> {t.add}
-            </Button>
+            <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> {t.add}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -111,7 +129,7 @@ function BranchesPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t.name} *</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="space-y-2">
                 <Label>{t.phone}</Label>
@@ -164,15 +182,13 @@ function BranchesPage() {
                     <TableCell>{b.phone ?? "—"}</TableCell>
                     <TableCell>{b.address ?? "—"}</TableCell>
                     <TableCell>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.status ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${b.status ? "bg-green-100/50 text-green-800" : "bg-red-100/50 text-red-800"}`}>
                         {b.status ? t.active : t.inactive}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => {
-                        if (confirm(t.confirmDelete)) del.mutate(b.id);
-                      }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => { if (confirm(t.confirmDelete)) del.mutate(b.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </TableCell>
                   </TableRow>
                 ))

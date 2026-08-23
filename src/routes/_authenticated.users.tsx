@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { t } from "@/lib/i18n";
+import { t, formatErrorMessage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/users")({
@@ -24,15 +24,28 @@ function UsersPage() {
   const { data: rows = [] } = useQuery({
     queryKey: ["user-roles-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("user_roles").select("id, user_id, role, branch_id").order("created_at");
-      const ids = (data ?? []).map((r) => r.user_id);
-      const { data: profiles } = ids.length
-        ? await supabase.from("profiles").select("id, full_name, phone").in("id", ids)
-        : { data: [] as any[] };
-      return (data ?? []).map((r) => ({
+      const { data: roles = [] } = await supabase.from("user_roles").select("id, user_id, role, branch_id").order("created_at");
+      const { data: profiles = [] } = await supabase.from("profiles").select("id, full_name, phone");
+
+      const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r]));
+      const list: any[] = (roles ?? []).map((r) => ({
         ...r,
         profile: profiles?.find((p) => p.id === r.user_id),
       }));
+
+      (profiles ?? []).forEach((p) => {
+        if (!roleMap.has(p.id)) {
+          list.push({
+            id: `new-${p.id}`,
+            user_id: p.id,
+            role: "manager",
+            branch_id: null,
+            profile: p,
+          });
+        }
+      });
+
+      return list;
     },
   });
 
@@ -42,12 +55,27 @@ function UsersPage() {
   });
 
   const updateRow = useMutation({
-    mutationFn: async (v: { id: string; role: "owner" | "manager"; branch_id: string | null }) => {
-      const { error } = await supabase.from("user_roles").update({ role: v.role, branch_id: v.branch_id }).eq("id", v.id);
-      if (error) throw error;
+    mutationFn: async (v: { id: string; user_id?: string; role: "owner" | "manager"; branch_id: string | null }) => {
+      if (v.id.startsWith("new-") && v.user_id) {
+        const { error } = await supabase.from("user_roles").insert({
+          user_id: v.user_id,
+          role: v.role,
+          branch_id: v.branch_id,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_roles")
+          .update({ role: v.role, branch_id: v.branch_id })
+          .eq("id", v.id);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { toast.success(t.updated); qc.invalidateQueries({ queryKey: ["user-roles-list"] }); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      toast.success(t.updated);
+      qc.invalidateQueries({ queryKey: ["user-roles-list"] });
+    },
+    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   return (
