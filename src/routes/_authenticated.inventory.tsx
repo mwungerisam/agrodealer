@@ -111,8 +111,8 @@ function InventoryPage() {
         <h1 className="text-3xl font-bold">{t.inventory}</h1>
         <p className="text-sm text-muted-foreground">
           {isOwner
-            ? "Reba ububiko bwose hamwe n'isiyanurwa ry'ishami."
-            : "Reba ububiko bw'ishami wize."}
+            ? "Reba ububiko bwose n'imiterere yabwo muri buri shami."
+            : "Reba ububiko bw'ishami waherewemo."}
         </p>
       </div>
 
@@ -168,12 +168,12 @@ function InventoryPage() {
               />
               {Number(newQty) > (adjustingItem?.current_qty ?? 0) && (
                 <p className="text-xs text-green-600">
-                  Ib yo kugarura n'imodoka y'ububiko
+                  Andika impamvu yo guhindura ububiko
                 </p>
               )}
               {Number(newQty) < (adjustingItem?.current_qty ?? 0) && (
                 <p className="text-xs text-orange-600">
-                  Ib yo gukurura ububiko bwo guhindura cyangwa ibindi
+                  Sobanura impamvu, urugero: ibyangiritse cyangwa ibarura rishya
                 </p>
               )}
             </div>

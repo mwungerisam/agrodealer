@@ -276,7 +276,7 @@ function TargetsPage() {
               <div className="space-y-2">
                 <Label>{t.worker}</Label>
                 <Select value={form.user_id} onValueChange={(v) => setForm({ ...form, user_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Hitamo umukozi (cyangwa usabitsi)" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Hitamo umukozi cyangwa ushyireho intego y'ishami" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Ishami ryose</SelectItem>
                     {workers.map((w: any) => (

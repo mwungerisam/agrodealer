@@ -17,10 +17,12 @@ import {
   Target,
   Shield,
   ArrowLeftRight,
+  KeyRound,
 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -46,6 +48,7 @@ function AuthenticatedLayout() {
     { to: "/inventory", label: t.inventory, icon: Boxes },
     { to: "/purchases", label: t.purchases, icon: ShoppingCart },
     { to: "/reports", label: t.reports, icon: FileText },
+    { to: "/account", label: t.account, icon: KeyRound },
   ];
 
   const adminNav = [
@@ -62,6 +65,7 @@ function AuthenticatedLayout() {
     { to: "/targets", label: t.targets, icon: Target },
     { to: "/audit", label: t.audit, icon: Shield },
     { to: "/reports", label: t.reports, icon: FileText },
+    { to: "/account", label: t.account, icon: KeyRound },
   ];
 
   const nav = isOwner ? adminNav : workerNav;
@@ -104,6 +108,7 @@ function AuthenticatedLayout() {
           })}
         </nav>
         <div className="border-t border-sidebar-border p-3">
+          <div className="mb-3 px-2"><LanguageSwitcher compact /></div>
           <div className="mb-2 px-2 text-xs text-sidebar-foreground/70">
             {user.email}
             <div className="mt-0.5 inline-flex items-center rounded-full bg-sidebar-primary/20 px-2 py-0.5 text-[10px] font-semibold text-sidebar-primary-foreground/90">
@@ -133,6 +138,7 @@ function AuthenticatedLayout() {
         <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-sidebar-foreground">
           <LogOut className="h-4 w-4" />
         </Button>
+        <LanguageSwitcher compact />
       </div>
 
       <main className="flex-1 md:ml-0">

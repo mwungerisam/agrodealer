@@ -49,11 +49,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold">
-          {isAuth ? "Nibyo gukora byoza" : "Habaye ikosa mu bikorwa"}
+          {isAuth ? "Kwinjira birakenewe" : "Habaye ikibazo"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isAuth
-            ? "Urakoze kugira ngo usuzuma. Injira cyangwa ubaze umuyobozi."
+            ? "Injira muri konti yawe cyangwa ubaze nyir'ubucuruzi ubufasha."
             : t.errorGeneric}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">

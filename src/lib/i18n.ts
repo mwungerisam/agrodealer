@@ -1,13 +1,22 @@
 // Centralized Kinyarwanda translation dictionary for UFBC AGRODEALER.
 // All user-facing strings route through this object so terminology stays
 // consistent and no text is hardcoded in components.
-export const t = {
+export type AppLanguage = "rw" | "en";
+
+const rw = {
   appName: "UFBC AGRODEALER",
-  tagline: "Ivunganirizo ry'Ububiko n'Ubucuruzi",
+  tagline: "Sisitemu yo Gucunga Ububiko n'Ubucuruzi",
 
   // ---- Auth ----
   signIn: "Injira",
   signUp: "Iyandikishe",
+  ownerLogin: "Injira nk'umuyobozi",
+  workerLogin: "Injira nk'umukozi",
+  registerAccount: "Fungura konti",
+  ownerLoginDesc: "Injira kugira ngo ucunge abakozi, amashami n'ububiko.",
+  workerLoginDesc: "Injira kugira ngo ukore ibikorwa by'ishami ryawe.",
+  registerAccountDesc: "Fungura konti nshya; umuyobozi azayigenera uruhare.",
+  wrongPortal: "Iyi konti ntabwo yemerewe kwinjira muri iki gice.",
   signOut: "Sohoka",
   email: "Imeri",
   password: "Ijambo ry'ibanga",
@@ -37,33 +46,33 @@ export const t = {
   passwordHint: "Nibura inyuguti 6 (koresha inyuguti, imibare n'ibimenyetso)",
 
   // ---- Navigation ----
-  dashboard: "Imbonerahamwe",
+  dashboard: "Incamake",
   branches: "Amashami",
   products: "Ibicuruzwa",
-  purchases: "Kurangura",
+  purchases: "Amasoko",
   sales: "Kugurisha",
   inventory: "Ububiko",
   reports: "Raporo",
-  expenses: "Ibyakoreshejwe",
+  expenses: "Ibisohoka",
   users: "Abakozi",
   customers: "Abakiriya",
   targets: "Intego zo kugurisha",
-  audit: "Ukoreshwa",
-  transfers: "Kohereza",
+  audit: "Igenzura ry'ibikorwa",
+  transfers: "Iyimurwa ry'ububiko",
 
   // ---- Actions ----
   save: "Bika",
   cancel: "Reka",
   delete: "Siba",
   edit: "Hindura",
-  update: "Hinduda",
+  update: "Hindura",
   search: "Shakisha",
   add: "Ongeraho",
-  addFirst: "Ongeraho cyangwa mbere",
-  new: "Rishya",
+  addFirst: "Ongeraho icya mbere",
+  new: "Gishya",
   create: "Kora",
   view: "Reba",
-  download: "Manura",
+  download: "Kuramo",
   select: "Hitamo",
   confirm: "Emeza",
   yes: "Yego",
@@ -74,31 +83,31 @@ export const t = {
   export: "Sohokura",
   exportCsv: "Sohokura CSV",
   exportPdf: "Sohokura PDF",
-  refresh: "Vai Kanani",
-  clearFilter: "Sokinya filida",
-  applyFilter: "Shyiraho filida",
+  refresh: "Ongera utangire",
+  clearFilter: "Siba iyungurura",
+  applyFilter: "Koresha iyungurura",
   all: "Byose",
 
   // ---- Fields ----
   name: "Izina",
-  code: "Kodiya",
+  code: "Kode",
   sku: "SKU",
   address: "Aderesi",
   location: "Ishami",
-  status: "Imimerere",
+  status: "Imiterere",
   active: "Ikora",
   inactive: "Ntikora",
   category: "Icyiciro",
   buyingPrice: "Igiciro cyo kugura",
   sellingPrice: "Igiciro cyo kugurisha",
-  currentStock: "Ububiko bwo muri iki gihe",
+  currentStock: "Ububiko buhari",
   unit: "Igipimo",
   unitPrice: "Igiciro kuri kimwe",
   total: "Igiteranyo",
   totalAmount: "Igiteranyo cy'agaciro",
   supplier: "Uwatanze",
   branch: "Ishami",
-  branchCode: "Kodiya y'ishami",
+  branchCode: "Kode y'ishami",
   product: "Igicuruzwa",
   quantity: "Ingano",
   transportCost: "Ikiguzi cyo gutwara",
@@ -132,7 +141,7 @@ export const t = {
   inStock: "Hari",
   lowStock: "Birahari",
   outOfStock: "Byanka",
-  stockStatus: "Imimerere y'ububiko",
+  stockStatus: "Imiterere y'ububiko",
 
   // ---- Dashboard ----
   todaySales: "Igurishwa ry'uyu munsi",
@@ -145,7 +154,7 @@ export const t = {
   totalBranches: "Amashami yose",
   totalProducts: "Ibicuruzwa byose",
   totalWorkers: "Abakozi bose",
-  totalInventoryValue: "Agaciro k'ububiko bose",
+  totalInventoryValue: "Agaciro k'ububiko bwose",
   monthlyRevenue: "Imari y'ukwezi",
   monthlyProfit: "Inyungu y'ukwezi",
   currentBranch: "Ishami ryo muri iki gihe",
@@ -159,7 +168,7 @@ export const t = {
   expense: "Igishoro",
   noActiveBranches: "Nta ishami rikora",
   noProducts: "Nta bicuruzwa",
-  noStock: "Nta kububiko",
+  noStock: "Nta bubiko buhari",
   setupRequired: "Gahunda ikaba ariyo",
 
   // ---- Reports ----
@@ -170,7 +179,7 @@ export const t = {
   downloadPdf: "Manura PDF",
   totalSales: "Igurishwa ryose",
   totalProfit: "Inyungu yose",
-  totalPurchases: "Kurangura kose",
+  totalPurchases: "Amasoko yose",
   totalExpenses: "Ibyakoreshejwe byose",
   netProfit: "Inyungu iheruka",
   grossProfit: "Inyungu isukuyemo",
@@ -195,7 +204,7 @@ export const t = {
   invalidNumber: "Umubare ntukwiye",
   invalidEmail: "Imeri ntikwiye",
   noStockEnough: "Ububiko ntibuhagije",
-  noStockForProduct: "Nta kububiko kw'igihekiri",
+  noStockForProduct: "Iki gicuruzwa nta bubiko gifite",
   chooseBranch: "Hitamo ishami",
   chooseProduct: "Hitamo igicuruzwa",
   chooseCustomer: "Hitamo umukiriya",
@@ -206,12 +215,12 @@ export const t = {
   unauthorized: "Ntibyemewe",
   operationFailed: "Ikosa mu bikorwa: {error}",
   customerRequired: "Umukiriya ni ngombwa kugira ngo wanditse igurisha",
-  transferComplete: "Kohereza yakunze",
+  transferComplete: "Iyimurwa ry'ububiko ryakozwe neza",
   stockAdjusted: "Ububiko bwahinduwe",
   stockAdjustment: "Hindura ububiko",
   targetSet: "Intego yohereywe",
-  noBranchesAvailable: "Nta ishami hangamijwe",
-  noProductsAvailable: "Nta bicuruzwa hangamijwe",
+  noBranchesAvailable: "Nta shami rihari",
+  noProductsAvailable: "Nta gicuruzwa gihari",
 
   // ---- Status badges ----
   statusSuccess: "Byagenzenwe neza",
@@ -222,7 +231,60 @@ export const t = {
   // ---- Currency ----
   rwf: "RWF",
   currency: "Amafaranga",
+  language: "Ururimi",
+  kinyarwanda: "Ikinyarwanda",
+  english: "English",
+  account: "Konti yanjye",
+  accountSettings: "Igenamiterere rya konti",
+  changePassword: "Hindura ijambo ry'ibanga",
+  passwordUpdated: "Ijambo ry'ibanga ryahinduwe neza.",
+  removeWorker: "Kuraho umukozi",
+  removeWorkerTitle: "Kuraho umukozi muri sisitemu?",
+  removeWorkerDesc: "Konti y'uyu mukozi izafungwa burundu. Amakuru y'ibikorwa yakoze azaguma muri sisitemu.",
+  workerRemoved: "Umukozi yavanywe muri sisitemu.",
+  cannotRemoveOwner: "Abayobozi ntibavanwa muri iki gice.",
+  addWorker: "Ongeraho umukozi",
+  inviteWorker: "Ohereza ubutumire ku mukozi",
+  workerInvited: "Ubutumire bwo gufungura konti bwoherejwe neza.",
+  workerInviteDesc: "Umukozi azahabwa email yo gushyiraho ijambo ry'ibanga, hanyuma ajye yinjira gusa.",
 };
+
+const en: Partial<typeof rw> = {
+  tagline: "Inventory and Business Management System",
+  signIn: "Sign in", signUp: "Sign up", signOut: "Sign out", email: "Email", password: "Password",
+  fullName: "Full name", phone: "Phone", forgotPassword: "Forgot password?", sendResetLink: "Send reset link",
+  backToAuth: "Back to sign in", resetPassword: "Reset password", newPassword: "New password", confirmPassword: "Confirm password",
+  dashboard: "Overview", branches: "Branches", products: "Products", purchases: "Purchases", sales: "Sales",
+  inventory: "Inventory", reports: "Reports", expenses: "Expenses", users: "Users", customers: "Customers",
+  targets: "Sales targets", audit: "Activity audit", transfers: "Stock transfers", save: "Save", cancel: "Cancel",
+  delete: "Delete", edit: "Edit", update: "Update", search: "Search", add: "Add", addFirst: "Add first",
+  new: "New", create: "Create", view: "View", download: "Download", select: "Select", confirm: "Confirm",
+  yes: "Yes", no: "No", loading: "Loading...", noData: "No data available", actions: "Actions",
+  export: "Export", exportCsv: "Export CSV", exportPdf: "Export PDF", refresh: "Refresh", clearFilter: "Clear filters", applyFilter: "Apply filters", all: "All",
+  name: "Name", code: "Code", address: "Address", location: "Branch", status: "Status", active: "Active", inactive: "Inactive", category: "Category",
+  buyingPrice: "Purchase price", sellingPrice: "Selling price", currentStock: "Current stock", unit: "Unit", unitPrice: "Unit price", total: "Total", totalAmount: "Total value",
+  supplier: "Supplier", branch: "Branch", branchCode: "Branch code", product: "Product", quantity: "Quantity", transportCost: "Transport cost", purchaseDate: "Purchase date", saleDate: "Sale date", expenseDate: "Date", description: "Description", amount: "Amount", role: "Role", owner: "Owner", manager: "Worker", worker: "Worker", profit: "Profit",
+  daily: "Daily", monthly: "Monthly", customer: "Customer", customerName: "Customer name", customerPhone: "Customer phone", categoryAll: "All categories", inStock: "In stock", lowStock: "Low stock", outOfStock: "Out of stock", stockStatus: "Stock status",
+  todaySales: "Today's sales", todayProfit: "Today's profit", todayExpenses: "Today's expenses", todayNet: "Today's net profit", recentTransactions: "Recent transactions", totalBranches: "Total branches", totalProducts: "Total products", totalWorkers: "Total workers", totalInventoryValue: "Total inventory value", monthlyRevenue: "Monthly revenue", monthlyProfit: "Monthly profit", currentBranch: "Current branch", salesTarget: "Sales target", salesAchieved: "Sales achieved", salesRemaining: "Remaining", businessOverview: "Business overview", branchPerformance: "Branch performance", revenue: "Revenue", expense: "Expense",
+  saved: "Saved successfully", deleted: "Deleted successfully", updated: "Updated successfully", error: "An error occurred", errorGeneric: "An error occurred. Please try again or contact an administrator.", requiredField: "This field is required", invalidEmail: "Invalid email address", noStockEnough: "Insufficient stock", chooseBranch: "Select a branch", chooseProduct: "Select a product", chooseCustomer: "Select a customer", onlyOwner: "Owner access only", unauthorized: "Not authorized",
+  language: "Language", kinyarwanda: "Kinyarwanda", english: "English", account: "My account", accountSettings: "Account settings", changePassword: "Change password", passwordUpdated: "Password updated successfully.", removeWorker: "Remove worker", removeWorkerTitle: "Remove worker from the system?", removeWorkerDesc: "This worker's account will be permanently closed. Their business activity records will remain.", workerRemoved: "Worker removed from the system.", cannotRemoveOwner: "Owners cannot be removed here.",
+  addWorker: "Add worker", inviteWorker: "Invite worker", workerInvited: "Account invitation sent successfully.", workerInviteDesc: "The worker will receive an email to set a password, then only needs to sign in.",
+};
+
+export function getLanguage(): AppLanguage {
+  if (typeof window === "undefined") return "rw";
+  return window.localStorage.getItem("ufbc-language") === "en" ? "en" : "rw";
+}
+
+export function setLanguage(language: AppLanguage) {
+  window.localStorage.setItem("ufbc-language", language);
+}
+
+export const t = new Proxy(rw, {
+  get(target, property: keyof typeof rw) {
+    return getLanguage() === "en" ? en[property] ?? target[property] : target[property];
+  },
+});
 
 // Number & currency formatting helpers
 export function money(n: number | string | null | undefined) {
@@ -273,7 +335,7 @@ export function formatErrorMessage(err: unknown): string {
     lower.includes("permission denied") ||
     code === "42501"
   ) {
-    return "Ntibyemewe: Nta burenganzira ufite bwo gukora iki gikorwa (Gusa Umuyobozi / Nyir'ubucuruzi ni we wemerewe).";
+    return "Ntabwo wemerewe gukora iki gikorwa. Cyemerewe gusa nyir'ubucuruzi.";
   }
 
   // Duplicate / Unique constraint

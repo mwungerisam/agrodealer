@@ -7,9 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { t, formatErrorMessage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/users")({
   component: UsersPage,
@@ -20,6 +33,9 @@ function UsersPage() {
   if (role && role.role !== "owner") return <Navigate to="/dashboard" replace />;
 
   const qc = useQueryClient();
+  const [removing, setRemoving] = useState<any | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [worker, setWorker] = useState({ fullName: "", email: "", phone: "", branchId: "" });
 
   const { data: rows = [] } = useQuery({
     queryKey: ["user-roles-list"],
@@ -78,17 +94,47 @@ function UsersPage() {
     onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
+  const removeWorker = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await (supabase.rpc as any)("delete_worker", { p_user_id: userId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t.workerRemoved);
+      setRemoving(null);
+      qc.invalidateQueries({ queryKey: ["user-roles-list"] });
+    },
+    onError: (error: Error) => toast.error(formatErrorMessage(error)),
+  });
+
+  const inviteWorker = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke("create-worker", { body: worker });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t.workerInvited);
+      setWorker({ fullName: "", email: "", phone: "", branchId: "" });
+      setAdding(false);
+      qc.invalidateQueries({ queryKey: ["user-roles-list"] });
+    },
+    onError: (error: Error) => toast.error(formatErrorMessage(error)),
+  });
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
         <h1 className="text-3xl font-bold">{t.users}</h1>
-        <p className="text-sm text-muted-foreground">Cunga abakoresha n'amashami bacunga</p>
+        <p className="text-sm text-muted-foreground">Cunga abakoresha, inshingano zabo n'amashami bakoreramo.</p>
+        </div>
+        <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />{t.addWorker}</Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Abakoresha bose ({rows.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">Abakoresha bashya biyandikisha kuri urubuga rw'injira, hanyuma ubaha uruhare rukwiye hano.</p>
+          <p className="text-xs text-muted-foreground">Abakoresha bashya babanza kwiyandikisha, hanyuma ukabaha uruhare n'ishami bakoreramo.</p>
         </CardHeader>
         <CardContent>
           <Table>
@@ -97,12 +143,13 @@ function UsersPage() {
                 <TableHead>{t.fullName}</TableHead>
                 <TableHead>{t.phone}</TableHead>
                 <TableHead>{t.role}</TableHead>
+                <TableHead className="w-16 text-right">{t.actions}</TableHead>
                 <TableHead>{t.branch}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
               ) : (
                 rows.map((r: any) => (
                   <TableRow key={r.id}>
@@ -116,6 +163,13 @@ function UsersPage() {
                           <SelectItem value="manager">{t.manager}</SelectItem>
                         </SelectContent>
                       </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {r.role === "manager" && (
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRemoving(r)} aria-label={t.removeWorker}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select
@@ -137,6 +191,32 @@ function UsersPage() {
           </Table>
         </CardContent>
       </Card>
+      <Dialog open={adding} onOpenChange={setAdding}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{t.inviteWorker}</DialogTitle><DialogDescription>{t.workerInviteDesc}</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label htmlFor="worker-name">{t.fullName}</Label><Input id="worker-name" value={worker.fullName} onChange={(e) => setWorker({ ...worker, fullName: e.target.value })} /></div>
+            <div className="space-y-1"><Label htmlFor="worker-email">{t.email}</Label><Input id="worker-email" type="email" value={worker.email} onChange={(e) => setWorker({ ...worker, email: e.target.value })} /></div>
+            <div className="space-y-1"><Label htmlFor="worker-phone">{t.phone}</Label><Input id="worker-phone" value={worker.phone} onChange={(e) => setWorker({ ...worker, phone: e.target.value })} /></div>
+            <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
+          </div>
+          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.inviteWorker}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={!!removing} onOpenChange={(open) => !open && setRemoving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.removeWorkerTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{t.removeWorkerDesc}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => removing && removeWorker.mutate(removing.user_id)}>
+              {removeWorker.isPending ? t.loading : t.removeWorker}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

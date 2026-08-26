@@ -101,7 +101,7 @@ function TransfersPage() {
 
   const canSave = () => {
     if (!form.from_branch) return t.chooseBranch;
-    if (!form.to_branch) return "Hitamo ishami j'ubudehe";
+    if (!form.to_branch) return "Hitamo ishami ryo kwakira ububiko.";
     if (!form.product_id) return t.chooseProduct;
     if (!form.quantity || Number(form.quantity) <= 0) return t.invalidNumber;
     if (Number(form.quantity) > availableQty) return t.noStockEnough;
@@ -154,7 +154,7 @@ function TransfersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.transfers}</h1>
-          <p className="text-sm text-muted-foreground">Kohereza ububiko hagari ikireshi</p>
+          <p className="text-sm text-muted-foreground">Hindura ububiko ubugenzure hagati y'amashami.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -164,7 +164,7 @@ function TransfersPage() {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Kohereza ububiko</DialogTitle>
+              <DialogTitle>Iyimura ry'ububiko</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {/* From branch */}
@@ -176,7 +176,7 @@ function TransfersPage() {
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Hitamo ishami rikusabaye" />
+                    <SelectValue placeholder="Hitamo ishami ryo koherezaho" />
                   </SelectTrigger>
                   <SelectContent>
                     {fromBranches.map((b: any) => (
@@ -197,7 +197,7 @@ function TransfersPage() {
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Hitamo ishami kigezweho" />
+                    <SelectValue placeholder="Hitamo ishami ryakira" />
                   </SelectTrigger>
                   <SelectContent>
                     {toBranches.map((b: any) => (
@@ -286,13 +286,13 @@ function TransfersPage() {
       <SetupBanner
         steps={[
           ...(branches.length === 0
-            ? [{ message: "Banza wongereho ishami muri Amashami mbire yo gufata ububiko.", to: "/branches", label: t.branches }]
+            ? [{ message: "Banza wongereho ishami mbere yo kwimura ububiko.", to: "/branches", label: t.branches }]
             : []),
           ...(branches.length > 0 && branches.length < 2
-            ? [{ message: "Hitagira kugira 2 ishami kugira ngo usubire ububiko hagari ireshi.", to: "/branches", label: t.branches }]
+            ? [{ message: "Ongeraho nibura amashami abiri kugira ngo ubashe kwimura ububiko.", to: "/branches", label: t.branches }]
             : []),
           ...(products.length === 0
-            ? [{ message: "Banza wongereho igicuruzwa muri Ibicuruzwa mbire yo gufata ububiko.", to: "/products", label: t.products }]
+            ? [{ message: "Banza wongereho igicuruzwa mbere yo kwimura ububiko.", to: "/products", label: t.products }]
             : []),
         ]}
       />
@@ -329,7 +329,7 @@ function TransfersPage() {
                 {filteredMovements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                      {movements.length === 0 ? t.noData : "Nta bindi bikorwa bibyo."}
+                      {movements.length === 0 ? t.noData : "Nta yandi makuru ahari."}
                     </TableCell>
                   </TableRow>
                 ) : (

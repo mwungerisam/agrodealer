@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Sprout, Eye, EyeOff } from "lucide-react";
+import { Loader2, Sprout, Eye, EyeOff, ShieldCheck, UserRound } from "lucide-react";
 import { t, formatAuthError } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -24,12 +25,10 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"in" | "up">("in");
+  const [tab, setTab] = useState<"owner" | "worker">("owner");
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -78,49 +77,29 @@ function AuthPage() {
       return;
     }
 
-    if (data?.session) {
+    if (data?.session && data.user) {
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      const expectsOwner = tab === "owner";
+      if ((expectsOwner && userRole?.role !== "owner") || (!expectsOwner && userRole?.role === "owner")) {
+        await supabase.auth.signOut();
+        toast.error(t.wrongPortal);
+        return;
+      }
+
       toast.success(t.welcome);
       navigate({ to: "/dashboard", replace: true });
-    }
-  };
-
-  const signUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanName = fullName.trim();
-    const cleanEmail = email.trim();
-    const cleanPhone = phone.trim();
-
-    if (!cleanName || !cleanEmail) return toast.error(t.requiredField);
-    if (password.length < 6) return toast.error(t.passwordTooShort);
-
-    setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: cleanName, phone: cleanPhone },
-      },
-    });
-    setBusy(false);
-
-    if (error) {
-      toast.error(formatAuthError(error));
-      return;
-    }
-
-    if (data?.session) {
-      toast.success(t.welcome);
-      navigate({ to: "/dashboard", replace: true });
-    } else {
-      toast.success(t.signUpSuccessEmailSent);
-      setTab("in");
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/10 p-3 sm:p-4">
       <div className="w-full max-w-md">
+        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <div className="mb-4 flex flex-col items-center text-center sm:mb-6">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg sm:h-14 sm:w-14">
             <Sprout className="h-6 w-6 sm:h-7 sm:w-7" />
@@ -167,22 +146,30 @@ function AuthPage() {
           ) : (
             <>
               <CardHeader>
-                <CardTitle>{tab === "in" ? t.signIn : t.signUp}</CardTitle>
+                <CardTitle>
+                  {tab === "owner" ? t.ownerLogin : t.workerLogin}
+                </CardTitle>
                 <CardDescription>
-                  {tab === "in" ? t.signInDesc : t.signUpDesc}
+                  {tab === "owner" ? t.ownerLoginDesc : t.workerLoginDesc}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs
                   value={tab}
-                  onValueChange={(v) => setTab(v as "in" | "up")}
+                  onValueChange={(v) => setTab(v as "owner" | "worker")}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="in">{t.signIn}</TabsTrigger>
-                    <TabsTrigger value="up">{t.signUp}</TabsTrigger>
+                    <TabsTrigger value="owner" className="gap-1.5">
+                      <ShieldCheck className="h-4 w-4" />
+                      {t.owner}
+                    </TabsTrigger>
+                    <TabsTrigger value="worker" className="gap-1.5">
+                      <UserRound className="h-4 w-4" />
+                      {t.worker}
+                    </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="in">
+                  <TabsContent value="owner">
                     <form onSubmit={signIn} className="space-y-4 pt-4">
                       <div className="space-y-2">
                         <Label htmlFor="in-email">{t.email}</Label>
@@ -236,29 +223,12 @@ function AuthPage() {
                     </form>
                   </TabsContent>
 
-                  <TabsContent value="up">
-                    <form onSubmit={signUp} className="space-y-4 pt-4">
+                  <TabsContent value="worker">
+                    <form onSubmit={signIn} className="space-y-4 pt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="up-name">{t.fullName}</Label>
+                        <Label htmlFor="worker-email">{t.email}</Label>
                         <Input
-                          id="up-name"
-                          required
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="up-phone">{t.phone}</Label>
-                        <Input
-                          id="up-phone"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="up-email">{t.email}</Label>
-                        <Input
-                          id="up-email"
+                          id="worker-email"
                           type="email"
                           required
                           value={email}
@@ -266,10 +236,10 @@ function AuthPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="up-pw">{t.password}</Label>
+                        <Label htmlFor="worker-pw">{t.password}</Label>
                         <div className="relative">
                           <Input
-                            id="up-pw"
+                            id="worker-pw"
                             type={showPassword ? "text" : "password"}
                             required
                             minLength={6}
@@ -282,24 +252,28 @@ function AuthPage() {
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             tabIndex={-1}
+                            aria-label={showPassword ? "Hisha ijambo ry'ibanga" : "Erekana ijambo ry'ibanga"}
                           >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          {t.passwordHint}
-                        </p>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setMode("forgot")}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {t.forgotPassword}
+                          </button>
+                        </div>
                       </div>
                       <Button type="submit" className="w-full" disabled={busy}>
                         {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t.signUp}
+                        {t.workerLogin}
                       </Button>
                     </form>
                   </TabsContent>
+
                 </Tabs>
               </CardContent>
             </>

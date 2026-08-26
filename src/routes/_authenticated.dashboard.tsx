@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth, useIsOwner, useBranchId } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -219,11 +220,14 @@ function Dashboard() {
         </Card>
       )}
 
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t.dashboard}</h1>
-        <p className="text-sm text-muted-foreground">
-          {isOwner ? t.businessOverview : "Reba ibikorwa byawe n'intego zawe"}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t.dashboard}</h1>
+          <p className="text-sm text-muted-foreground">
+            {isOwner ? t.businessOverview : "Reba ibikorwa byawe n'intego zawe"}
+          </p>
+        </div>
+        <LanguageSwitcher />
       </div>
 
       {/* Setup banner for owner */}
