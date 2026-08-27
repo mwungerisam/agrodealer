@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, formatErrorMessage } from "@/lib/i18n";
+import { t, money, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -141,7 +141,7 @@ function ProductsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.products}</h1>
-          <p className="text-sm text-muted-foreground">Cunga ibicuruzwa byawe</p>
+          <p className="text-sm text-muted-foreground">{localized("Cunga ibicuruzwa byawe.", "Manage your products.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

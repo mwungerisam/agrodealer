@@ -14,9 +14,22 @@ Deno.serve(async (request) => {
   const { data: role } = await admin.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
   if (role?.role !== "owner") return Response.json({ error: "Owner access required" }, { status: 403, headers });
 
-  const { email, fullName, phone, branchId } = await request.json();
-  if (!email || !fullName || !branchId) return Response.json({ error: "Name, email and branch are required" }, { status: 400, headers });
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email.trim(), { data: { full_name: fullName.trim(), phone: phone?.trim() ?? "" } });
+  const { email, fullName, phone, branchId, initialPassword } = await request.json();
+  if (!email || !fullName || !branchId || !initialPassword) {
+    return Response.json({ error: "Name, email, branch, and an initial password are required" }, { status: 400, headers });
+  }
+  if (String(initialPassword).length < 8) {
+    return Response.json({ error: "The initial password must contain at least 8 characters" }, { status: 400, headers });
+  }
+
+  // Create the account directly rather than sending an invitation email. This
+  // keeps worker onboarding available when the provider's email quota is busy.
+  const { data, error } = await admin.auth.admin.createUser({
+    email: email.trim(),
+    password: initialPassword,
+    email_confirm: true,
+    user_metadata: { full_name: fullName.trim(), phone: phone?.trim() ?? "" },
+  });
   if (error || !data.user) return Response.json({ error: error?.message ?? "Could not create worker" }, { status: 400, headers });
   const { error: roleError } = await admin.from("user_roles").upsert({ user_id: data.user.id, role: "manager", branch_id: branchId }, { onConflict: "user_id" });
   if (roleError) return Response.json({ error: roleError.message }, { status: 400, headers });

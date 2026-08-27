@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { t, money, numberFmt, fmtDate } from "@/lib/i18n";
+import { t, money, numberFmt, fmtDate, localized } from "@/lib/i18n";
 import {
   TrendingUp,
   Boxes,
@@ -224,7 +224,7 @@ function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t.dashboard}</h1>
           <p className="text-sm text-muted-foreground">
-            {isOwner ? t.businessOverview : "Reba ibikorwa byawe n'intego zawe"}
+          {isOwner ? t.businessOverview : localized("Reba ibikorwa byawe n'intego zawe.", "Review your activity and sales targets.")}
           </p>
         </div>
         <LanguageSwitcher />
@@ -235,13 +235,13 @@ function Dashboard() {
         <SetupBanner
           steps={[
             ...(stats && stats.branchCount === 0
-              ? [{ message: "Intambwe 1: Ongeraho ishami rya mbere.", to: "/branches", label: t.branches }]
+              ? [{ message: localized("Intambwe ya 1: Ongeraho ishami rya mbere.", "Step 1: Add your first branch."), to: "/branches", label: t.branches }]
               : []),
             ...(stats && stats.productCount === 0
-              ? [{ message: "Intambwe 2: Ongeraho igicuruzwa cya mbere.", to: "/products", label: t.products }]
+              ? [{ message: localized("Intambwe ya 2: Ongeraho igicuruzwa cya mbere.", "Step 2: Add your first product."), to: "/products", label: t.products }]
               : []),
             ...(stats && stats.branchCount > 0 && stats.productCount > 0 && stats.totalStock === 0
-              ? [{ message: "Intambwe 3: Andika urangura kugira ngo uzuze ububiko.", to: "/purchases", label: t.purchases }]
+              ? [{ message: localized("Intambwe ya 3: Andika isoko kugira ngo ububiko bwuzure.", "Step 3: Record a purchase to stock your inventory."), to: "/purchases", label: t.purchases }]
               : []),
           ]}
         />
@@ -375,7 +375,7 @@ function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">Nta bicuruzwa bike</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{localized("Nta bicuruzwa bifite ububiko buke.", "No products are low in stock.")}</p>
             )}
           </CardContent>
         </Card>

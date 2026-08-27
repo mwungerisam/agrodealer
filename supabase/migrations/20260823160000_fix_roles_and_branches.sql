@@ -73,6 +73,9 @@ BEGIN
 END $$;
 
 -- 3. Self-healing RPC for authenticated users
+-- PostgreSQL cannot alter a function's return type with CREATE OR REPLACE.
+-- The preceding hardening migration defined this RPC as RETURNS VOID.
+DROP FUNCTION IF EXISTS public.ensure_user_role();
 CREATE OR REPLACE FUNCTION public.ensure_user_role()
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE

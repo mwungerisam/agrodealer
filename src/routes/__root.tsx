@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { t } from "@/lib/i18n";
+import { LanguageProvider } from "@/components/language-provider";
 
 function NotFoundComponent() {
   return (
@@ -136,10 +137,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-        <Toaster position="top-right" richColors />
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <Outlet />
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
+import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
@@ -74,7 +74,7 @@ function ExpensesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.expenses}</h1>
-          <p className="text-sm text-muted-foreground">Andika ibyakoreshejwe n'ubucuruzi</p>
+          <p className="text-sm text-muted-foreground">{localized("Andika ibisohoka by'ubucuruzi.", "Record business expenses.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

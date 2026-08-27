@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, ShoppingCart, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
+import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useIsOwner, useBranchId, useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
 
@@ -78,7 +78,7 @@ function SalesPage() {
       const { data } = await supabase
         .from("sales")
         .select(
-          "id, quantity, selling_price, profit, sale_date, products(name, unit), branches(name), created_by",
+          "id, quantity, selling_price, profit, sale_date, customer_name, products(name, unit), branches(name), created_by",
         )
         .order("sale_date", { ascending: false })
         .limit(200);
@@ -88,7 +88,8 @@ function SalesPage() {
 
   // Auto-calculate total
   const qty = Number(form.quantity) || 0;
-  const unitPrice = Number(form.selling_price) || Number(selectedProduct?.selling_price) || 0;
+  const catalogPrice = Number(selectedProduct?.selling_price) || 0;
+  const unitPrice = isOwner ? Number(form.selling_price) || catalogPrice : catalogPrice;
   const lineTotal = qty * unitPrice;
   const availableStock = Number(stock?.quantity ?? 0);
 
@@ -96,6 +97,7 @@ function SalesPage() {
     if (!form.branch_id) return t.chooseBranch;
     if (!form.product_id) return t.chooseProduct;
     if (qty <= 0) return t.invalidNumber;
+    if (!customerName.trim()) return t.customerRequired;
     if (qty > availableStock) return t.noStockEnough;
     return null;
   };
@@ -105,12 +107,36 @@ function SalesPage() {
       const err = canSave();
       if (err) throw new Error(err);
 
+      const cleanCustomerName = customerName.trim();
+      const cleanCustomerPhone = customerPhone.trim() || null;
+      const { data: matchingCustomers, error: lookupError } = await supabase
+        .from("customers")
+        .select("id, phone")
+        .eq("branch_id", form.branch_id)
+        .eq("name", cleanCustomerName)
+        .limit(20);
+      if (lookupError) throw lookupError;
+      const existingCustomer = matchingCustomers?.find((customer) => (customer.phone ?? null) === cleanCustomerPhone);
+      let customerId = existingCustomer?.id ?? null;
+      if (!customerId) {
+        const { data: createdCustomer, error: customerError } = await supabase
+          .from("customers")
+          .insert({ name: cleanCustomerName, phone: cleanCustomerPhone, branch_id: form.branch_id, created_by: user?.id ?? null })
+          .select("id")
+          .single();
+        if (customerError) throw customerError;
+        customerId = createdCustomer.id;
+      }
+
       const { error } = await supabase.from("sales").insert({
         branch_id: form.branch_id,
         product_id: form.product_id,
         quantity: qty,
         selling_price: unitPrice,
         sale_date: form.sale_date,
+        customer_id: customerId,
+        customer_name: cleanCustomerName,
+        customer_phone: cleanCustomerPhone,
         created_by: user?.id ?? null,
       });
       if (error) throw error;
@@ -167,7 +193,7 @@ function SalesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.sales}</h1>
-          <p className="text-sm text-muted-foreground">Andika igurisha cya bicuruzwa</p>
+          <p className="text-sm text-muted-foreground">{localized("Andika amakuru y'igurisha ry'ibicuruzwa.", "Record product sales.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -269,9 +295,10 @@ function SalesPage() {
                   <Input
                     type="number"
                     min={0}
-                    value={form.selling_price}
+                    value={isOwner ? form.selling_price : catalogPrice.toString()}
                     onChange={(e) => setForm({ ...form, selling_price: e.target.value })}
                     placeholder={selectedProduct ? money(selectedProduct.selling_price) : ""}
+                    readOnly={!isOwner}
                   />
                 </div>
               </div>
@@ -297,7 +324,7 @@ function SalesPage() {
                     <span className="text-green-600">{money((unitPrice - Number(selectedProduct?.buying_price ?? 0)) * qty)}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Inyungu ikingira ku igiciro cyo kugura (igishoramwe)
+                    {localized("Inyungu ibarwa hakurikijwe igiciro cyashyizweho n'umuyobozi.", "Profit is calculated from the owner-set catalog price.")}
                   </p>
                 </CardContent>
               </Card>
@@ -324,10 +351,10 @@ function SalesPage() {
       <SetupBanner
         steps={[
           ...(branches.length === 0
-            ? [{ message: "Banza wongereho ishami muri Amashami mbere yo kugurisha.", to: "/branches", label: t.branches }]
+            ? [{ message: localized("Banza wongereho ishami mbere yo kwandika igurisha.", "Add a branch before recording sales."), to: "/branches", label: t.branches }]
             : []),
           ...(products.length === 0
-            ? [{ message: "Banza wongereho igicuruzwa muri Ibicuruzwa mbire yo kugurisha.", to: "/products", label: t.products }]
+            ? [{ message: localized("Banza wongereho igicuruzwa mbere yo kwandika igurisha.", "Add a product before recording sales."), to: "/products", label: t.products }]
             : []),
         ]}
       />

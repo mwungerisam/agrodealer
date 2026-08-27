@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
+import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
 
@@ -101,7 +101,7 @@ function PurchasesPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.purchases}</h1>
-          <p className="text-sm text-muted-foreground">Andika kurangura ku bicuruzwa</p>
+          <p className="text-sm text-muted-foreground">{localized("Andika amakuru y'amasoko y'ibicuruzwa.", "Record product purchases.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -165,10 +165,10 @@ function PurchasesPage() {
       <SetupBanner
         steps={[
           ...(branches.length === 0
-            ? [{ message: "Banza wongereho ishami muri Amashami mbere yo kurangura.", to: "/branches", label: t.branches }]
+            ? [{ message: localized("Banza wongereho ishami mbere yo kwandika isoko.", "Add a branch before recording a purchase."), to: "/branches", label: t.branches }]
             : []),
           ...(products.length === 0
-            ? [{ message: "Banza wongereho igicuruzwa muri Ibicuruzwa mbere yo kurangura.", to: "/products", label: t.products }]
+            ? [{ message: localized("Banza wongereho igicuruzwa mbere yo kwandika isoko.", "Add a product before recording a purchase."), to: "/products", label: t.products }]
             : []),
         ]}
       />

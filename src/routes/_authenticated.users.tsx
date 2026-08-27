@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { t, formatErrorMessage } from "@/lib/i18n";
+import { t, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -35,7 +35,7 @@ function UsersPage() {
   const qc = useQueryClient();
   const [removing, setRemoving] = useState<any | null>(null);
   const [adding, setAdding] = useState(false);
-  const [worker, setWorker] = useState({ fullName: "", email: "", phone: "", branchId: "" });
+  const [worker, setWorker] = useState({ fullName: "", email: "", phone: "", branchId: "", initialPassword: "" });
 
   const { data: rows = [] } = useQuery({
     queryKey: ["user-roles-list"],
@@ -110,11 +110,20 @@ function UsersPage() {
   const inviteWorker = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke("create-worker", { body: worker });
-      if (error) throw error;
+      if (error) {
+        // Edge Functions return their useful validation/authentication message in
+        // the response body; surface it instead of a generic HTTP-status toast.
+        const response = (error as { context?: Response }).context;
+        if (response) {
+          const payload = await response.json().catch(() => null) as { error?: string } | null;
+          if (payload?.error) throw new Error(payload.error);
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
-      toast.success(t.workerInvited);
-      setWorker({ fullName: "", email: "", phone: "", branchId: "" });
+      toast.success(t.workerCreated);
+      setWorker({ fullName: "", email: "", phone: "", branchId: "", initialPassword: "" });
       setAdding(false);
       qc.invalidateQueries({ queryKey: ["user-roles-list"] });
     },
@@ -126,15 +135,15 @@ function UsersPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
         <h1 className="text-3xl font-bold">{t.users}</h1>
-        <p className="text-sm text-muted-foreground">Cunga abakoresha, inshingano zabo n'amashami bakoreramo.</p>
+        <p className="text-sm text-muted-foreground">{localized("Cunga abakoresha, inshingano zabo n'amashami bakoreramo.", "Manage users, their roles, and their branch assignments.")}</p>
         </div>
         <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />{t.addWorker}</Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Abakoresha bose ({rows.length})</CardTitle>
-          <p className="text-xs text-muted-foreground">Abakoresha bashya babanza kwiyandikisha, hanyuma ukabaha uruhare n'ishami bakoreramo.</p>
+          <CardTitle className="text-base">{localized(`Abakoresha bose (${rows.length})`, `All users (${rows.length})`)}</CardTitle>
+          <p className="text-xs text-muted-foreground">{localized("Umuyobozi ni we ushyiraho konti z'abakozi kandi akabagenera uruhare n'ishami.", "The owner creates worker accounts and assigns their role and branch.")}</p>
         </CardHeader>
         <CardContent>
           <Table>
@@ -143,8 +152,8 @@ function UsersPage() {
                 <TableHead>{t.fullName}</TableHead>
                 <TableHead>{t.phone}</TableHead>
                 <TableHead>{t.role}</TableHead>
-                <TableHead className="w-16 text-right">{t.actions}</TableHead>
                 <TableHead>{t.branch}</TableHead>
+                <TableHead className="w-16 text-right">{t.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,14 +202,15 @@ function UsersPage() {
       </Card>
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t.inviteWorker}</DialogTitle><DialogDescription>{t.workerInviteDesc}</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{t.createWorker}</DialogTitle><DialogDescription>{t.workerCreationDesc}</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1"><Label htmlFor="worker-name">{t.fullName}</Label><Input id="worker-name" value={worker.fullName} onChange={(e) => setWorker({ ...worker, fullName: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-email">{t.email}</Label><Input id="worker-email" type="email" value={worker.email} onChange={(e) => setWorker({ ...worker, email: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-phone">{t.phone}</Label><Input id="worker-phone" value={worker.phone} onChange={(e) => setWorker({ ...worker, phone: e.target.value })} /></div>
+            <div className="space-y-1"><Label htmlFor="worker-password">{t.initialPassword}</Label><Input id="worker-password" type="password" minLength={8} value={worker.initialPassword} onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })} /></div>
             <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
           </div>
-          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.inviteWorker}</Button></DialogFooter>
+          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || worker.initialPassword.length < 8 || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <AlertDialog open={!!removing} onOpenChange={(open) => !open && setRemoving(null)}>

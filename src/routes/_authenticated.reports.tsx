@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download } from "lucide-react";
-import { t, money, fmtDate } from "@/lib/i18n";
+import { t, money, numberFmt, fmtDate } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { generateReportPdf } from "@/lib/pdf";
 import { toast } from "sonner";
@@ -21,9 +21,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const { role } = useAuth();
   const isOwner = role?.role === "owner";
-  const [tab, setTab] = useState<"daily" | "monthly">("daily");
+  const [tab, setTab] = useState<"daily" | "weekly" | "monthly" | "annual">("daily");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [branchId, setBranchId] = useState<string>(role?.branch_id ?? "all");
 
   const { data: branches = [] } = useQuery({
@@ -31,15 +32,25 @@ function ReportsPage() {
     queryFn: async () => (await supabase.from("branches").select("id, name").order("name")).data ?? [],
   });
 
-  const range =
-    tab === "daily"
-      ? { from: date, to: date }
-      : (() => {
-          const [y, m] = month.split("-").map(Number);
-          const start = new Date(y, m - 1, 1);
-          const end = new Date(y, m, 0);
+  const range = tab === "daily"
+    ? { from: date, to: date }
+    : tab === "weekly"
+      ? (() => {
+          const start = new Date(`${date}T00:00:00`);
+          const day = start.getDay();
+          start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+          const end = new Date(start);
+          end.setDate(start.getDate() + 6);
           return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
-        })();
+        })()
+      : tab === "monthly"
+        ? (() => {
+            const [y, m] = month.split("-").map(Number);
+            const start = new Date(y, m - 1, 1);
+            const end = new Date(y, m, 0);
+            return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+          })()
+        : { from: `${year}-01-01`, to: `${year}-12-31` };
 
   const branchFilter = isOwner ? (branchId === "all" ? null : branchId) : role?.branch_id ?? null;
 
@@ -49,7 +60,7 @@ function ReportsPage() {
       const withBranch = <T,>(q: T): T => (branchFilter ? (q as any).eq("branch_id", branchFilter) : q);
 
       const salesQ = withBranch(
-        supabase.from("sales").select("quantity, selling_price, profit, sale_date, products(name), branches(name)").gte("sale_date", range.from).lte("sale_date", range.to).order("sale_date", { ascending: false })
+        supabase.from("sales").select("quantity, selling_price, profit, sale_date, customer_name, products(name), branches(name)").gte("sale_date", range.from).lte("sale_date", range.to).order("sale_date", { ascending: false })
       );
       const purchQ = withBranch(
         supabase.from("purchases").select("quantity, buying_price, transport_cost, supplier, purchase_date, products(name), branches(name)").gte("purchase_date", range.from).lte("purchase_date", range.to).order("purchase_date", { ascending: false })
@@ -75,6 +86,7 @@ function ReportsPage() {
           purchases: totalPurchases,
           expenses: totalExpenses,
           net: totalProfit - totalExpenses,
+          customers: new Set((sales ?? []).map((sale) => sale.customer_name).filter(Boolean)).size,
         },
       };
     },
@@ -84,7 +96,7 @@ function ReportsPage() {
     if (!report) return;
     const branchName =
       branchFilter ? (branches.find((b: any) => b.id === branchFilter)?.name ?? "—") : "Amashami yose";
-    const title = tab === "daily" ? `${t.dailyReport} — ${fmtDate(date)}` : `${t.monthlyReport} — ${month}`;
+    const title = tab === "daily" ? `${t.dailyReport} - ${fmtDate(date)}` : tab === "weekly" ? `${t.weeklyReport} - ${range.from}` : tab === "monthly" ? `${t.monthlyReport} - ${month}` : `${t.annualReport} - ${year}`;
     const period = `${fmtDate(range.from)} → ${fmtDate(range.to)}`;
     generateReportPdf({
       title,
@@ -93,6 +105,7 @@ function ReportsPage() {
       sales: (report.sales as any[]).map((s) => ({
         date: s.sale_date,
         product: s.products?.name ?? "",
+        customer: s.customer_name ?? "-",
         qty: Number(s.quantity),
         price: Number(s.selling_price),
         profit: Number(s.profit),
@@ -121,13 +134,14 @@ function ReportsPage() {
     { label: t.totalPurchases, value: money(report?.totals.purchases ?? 0), tone: "" },
     { label: t.totalExpenses, value: money(report?.totals.expenses ?? 0), tone: "text-destructive" },
     { label: t.netProfit, value: money(report?.totals.net ?? 0), tone: "text-primary font-bold" },
+    { label: t.totalCustomers, value: numberFmt(report?.totals.customers ?? 0), tone: "text-primary" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t.reports}</h1>
-        <p className="text-sm text-muted-foreground">Kora raporo z'umunsi cyangwa z'ukwezi</p>
+        <p className="text-sm text-muted-foreground">{t.reportDescription}</p>
       </div>
 
       <Card>
@@ -135,7 +149,9 @@ function ReportsPage() {
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
             <TabsList>
               <TabsTrigger value="daily">{t.dailyReport}</TabsTrigger>
+              <TabsTrigger value="weekly">{t.weeklyReport}</TabsTrigger>
               <TabsTrigger value="monthly">{t.monthlyReport}</TabsTrigger>
+              <TabsTrigger value="annual">{t.annualReport}</TabsTrigger>
             </TabsList>
             <TabsContent value="daily" className="mt-4">
               <div className="flex flex-wrap items-end gap-3">
@@ -158,6 +174,13 @@ function ReportsPage() {
                 <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
               </div>
             </TabsContent>
+            <TabsContent value="weekly" className="mt-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-2"><Label>{t.weekOf}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+                {isOwner && <div className="space-y-2"><Label>{t.branch}</Label><Select value={branchId} onValueChange={setBranchId}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t.allBranches}</SelectItem>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>}
+                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
+              </div>
+            </TabsContent>
             <TabsContent value="monthly" className="mt-4">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-2">
@@ -177,6 +200,13 @@ function ReportsPage() {
                   </div>
                 )}
                 <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="annual" className="mt-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-2"><Label>{t.year}</Label><Input type="number" min="2000" max="2100" value={year} onChange={(e) => setYear(e.target.value)} /></div>
+                {isOwner && <div className="space-y-2"><Label>{t.branch}</Label><Select value={branchId} onValueChange={setBranchId}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t.allBranches}</SelectItem>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>}
+                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
               </div>
             </TabsContent>
           </Tabs>

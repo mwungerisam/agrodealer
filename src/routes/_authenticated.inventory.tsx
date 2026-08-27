@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { t, money, numberFmt, formatErrorMessage } from "@/lib/i18n";
+import { t, money, numberFmt, formatErrorMessage, localized } from "@/lib/i18n";
 import { useIsOwner, useBranchId } from "@/lib/auth-context";
 import { StockBadge } from "@/lib/stock-badge";
 
@@ -111,8 +111,8 @@ function InventoryPage() {
         <h1 className="text-3xl font-bold">{t.inventory}</h1>
         <p className="text-sm text-muted-foreground">
           {isOwner
-            ? "Reba ububiko bwose n'imiterere yabwo muri buri shami."
-            : "Reba ububiko bw'ishami waherewemo."}
+            ? localized("Reba ububiko bwose n'imiterere yabwo muri buri shami.", "Review all inventory and its status in every branch.")
+            : localized("Reba ububiko bw'ishami waherewemo.", "Review inventory assigned to your branch.")}
         </p>
       </div>
 
@@ -168,12 +168,12 @@ function InventoryPage() {
               />
               {Number(newQty) > (adjustingItem?.current_qty ?? 0) && (
                 <p className="text-xs text-green-600">
-                  Andika impamvu yo guhindura ububiko
+                  {localized("Andika impamvu yo guhindura ububiko", "Enter the reason for this inventory adjustment")}
                 </p>
               )}
               {Number(newQty) < (adjustingItem?.current_qty ?? 0) && (
                 <p className="text-xs text-orange-600">
-                  Sobanura impamvu, urugero: ibyangiritse cyangwa ibarura rishya
+                  {localized("Sobanura impamvu, urugero: ibyangiritse cyangwa ibarura rishya", "Explain the reason, for example damaged goods or a new stock count")}
                 </p>
               )}
             </div>

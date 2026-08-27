@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, Search, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { t, formatErrorMessage } from "@/lib/i18n";
-import { useIsOwner } from "@/lib/auth-context";
+import { useIsOwner, useBranchId, useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
 
 export const Route = createFileRoute("/_authenticated/customers")({
@@ -30,7 +30,8 @@ interface Customer {
 
 function CustomersPage() {
   const isOwner = useIsOwner();
-  if (!isOwner) return <Navigate to="/dashboard" replace />;
+  const workerBranchId = useBranchId();
+  const { user } = useAuth();
 
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -68,17 +69,18 @@ function CustomersPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t.requiredField);
-      if (!form.branch_id) throw new Error(t.chooseBranch);
+      const branchId = isOwner ? form.branch_id : workerBranchId;
+      if (!branchId) throw new Error(t.chooseBranch);
       if (editing) {
         const { error } = await supabase
           .from("customers")
-          .update({ name: form.name.trim(), phone: form.phone.trim() || null, branch_id: form.branch_id })
+          .update({ name: form.name.trim(), phone: form.phone.trim() || null, branch_id: branchId })
           .eq("id", editing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("customers")
-          .insert({ name: form.name.trim(), phone: form.phone.trim() || null, branch_id: form.branch_id });
+          .insert({ name: form.name.trim(), phone: form.phone.trim() || null, branch_id: branchId, created_by: user?.id ?? null });
         if (error) throw error;
       }
     },
@@ -88,7 +90,7 @@ function CustomersPage() {
       qc.invalidateQueries({ queryKey: ["branches-active"] });
       setOpen(false);
       setEditing(null);
-      setForm({ branch_id: "", name: "", phone: "" });
+      setForm({ branch_id: isOwner ? "" : workerBranchId ?? "", name: "", phone: "" });
     },
     onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
@@ -113,7 +115,7 @@ function CustomersPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ branch_id: "", name: "", phone: "" });
+    setForm({ branch_id: isOwner ? "" : workerBranchId ?? "", name: "", phone: "" });
     setOpen(true);
   };
   const openEdit = (c: Customer) => {
@@ -141,8 +143,7 @@ function CustomersPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t.branch} *</Label>
-                <Select
+                {isOwner && <><Label>{t.branch} *</Label><Select
                   value={form.branch_id}
                   onValueChange={(v) => setForm({ ...form, branch_id: v })}
                 >
@@ -154,7 +155,7 @@ function CustomersPage() {
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                </Select></>}
               </div>
               <div className="space-y-2">
                 <Label>{t.customerName} *</Label>
@@ -217,18 +218,21 @@ function CustomersPage() {
                     <TableCell>{c.phone ?? "—"}</TableCell>
                     <TableCell>{c.branches?.name ?? "—"}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          if (confirm(t.confirmDelete)) del.mutate(c.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {isOwner && <>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(c)} aria-label={t.edit}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm(t.confirmDelete)) del.mutate(c.id);
+                          }}
+                          aria-label={t.delete}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>}
                     </TableCell>
                   </TableRow>
                 ))

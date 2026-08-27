@@ -113,7 +113,7 @@ function AuthPage() {
               <CardHeader>
                 <CardTitle>{t.forgotPassword}</CardTitle>
                 <CardDescription>
-                  {t.sendResetLink}: {t.email} yawe.
+                  {t.resetLinkDescription}
                 </CardDescription>
               </CardHeader>
               <CardContent>

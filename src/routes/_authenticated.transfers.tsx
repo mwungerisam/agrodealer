@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeftRight, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { t, money, numberFmt, fmtDate, formatErrorMessage } from "@/lib/i18n";
+import { t, money, numberFmt, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useIsOwner } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
 
@@ -101,7 +101,7 @@ function TransfersPage() {
 
   const canSave = () => {
     if (!form.from_branch) return t.chooseBranch;
-    if (!form.to_branch) return "Hitamo ishami ryo kwakira ububiko.";
+    if (!form.to_branch) return localized("Hitamo ishami ryo kwakira ububiko.", "Select the receiving branch.");
     if (!form.product_id) return t.chooseProduct;
     if (!form.quantity || Number(form.quantity) <= 0) return t.invalidNumber;
     if (Number(form.quantity) > availableQty) return t.noStockEnough;
@@ -154,7 +154,7 @@ function TransfersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">{t.transfers}</h1>
-          <p className="text-sm text-muted-foreground">Hindura ububiko ubugenzure hagati y'amashami.</p>
+          <p className="text-sm text-muted-foreground">{localized("Hindura ububiko ubugenzure hagati y'amashami.", "Move inventory between branches with a complete record.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -164,7 +164,7 @@ function TransfersPage() {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Iyimura ry'ububiko</DialogTitle>
+              <DialogTitle>{localized("Iyimura ry'ububiko", "Stock transfer")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {/* From branch */}
@@ -176,7 +176,7 @@ function TransfersPage() {
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Hitamo ishami ryo koherezaho" />
+                    <SelectValue placeholder={localized("Hitamo ishami ryo koherezaho", "Select the sending branch")} />
                   </SelectTrigger>
                   <SelectContent>
                     {fromBranches.map((b: any) => (
@@ -197,7 +197,7 @@ function TransfersPage() {
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Hitamo ishami ryakira" />
+                    <SelectValue placeholder={localized("Hitamo ishami ryakira", "Select the receiving branch")} />
                   </SelectTrigger>
                   <SelectContent>
                     {toBranches.map((b: any) => (
@@ -286,13 +286,13 @@ function TransfersPage() {
       <SetupBanner
         steps={[
           ...(branches.length === 0
-            ? [{ message: "Banza wongereho ishami mbere yo kwimura ububiko.", to: "/branches", label: t.branches }]
+            ? [{ message: localized("Banza wongereho ishami mbere yo kwimura ububiko.", "Add a branch before transferring inventory."), to: "/branches", label: t.branches }]
             : []),
           ...(branches.length > 0 && branches.length < 2
-            ? [{ message: "Ongeraho nibura amashami abiri kugira ngo ubashe kwimura ububiko.", to: "/branches", label: t.branches }]
+            ? [{ message: localized("Ongeraho nibura amashami abiri kugira ngo ubashe kwimura ububiko.", "Add at least two branches before transferring inventory."), to: "/branches", label: t.branches }]
             : []),
           ...(products.length === 0
-            ? [{ message: "Banza wongereho igicuruzwa mbere yo kwimura ububiko.", to: "/products", label: t.products }]
+            ? [{ message: localized("Banza wongereho igicuruzwa mbere yo kwimura ububiko.", "Add a product before transferring inventory."), to: "/products", label: t.products }]
             : []),
         ]}
       />
@@ -329,7 +329,7 @@ function TransfersPage() {
                 {filteredMovements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                      {movements.length === 0 ? t.noData : "Nta yandi makuru ahari."}
+                      {movements.length === 0 ? t.noData : localized("Nta yandi makuru ahari.", "No additional records are available.")}
                     </TableCell>
                   </TableRow>
                 ) : (

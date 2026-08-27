@@ -45,6 +45,7 @@ function AuthenticatedLayout() {
   const workerNav = [
     { to: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
     { to: "/sales", label: t.sales, icon: TrendingUp },
+    { to: "/customers", label: t.customers, icon: UserCheck },
     { to: "/inventory", label: t.inventory, icon: Boxes },
     { to: "/purchases", label: t.purchases, icon: ShoppingCart },
     { to: "/reports", label: t.reports, icon: FileText },

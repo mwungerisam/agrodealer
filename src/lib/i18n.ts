@@ -3,6 +3,8 @@
 // consistent and no text is hardcoded in components.
 export type AppLanguage = "rw" | "en";
 
+let currentLanguage: AppLanguage = "rw";
+
 const rw = {
   appName: "UFBC AGRODEALER",
   tagline: "Sisitemu yo Gucunga Ububiko n'Ubucuruzi",
@@ -29,11 +31,12 @@ const rw = {
   signUpDesc: "Iyandikishe kugira ngo utangire",
   forgotPassword: "Wibagiwe ijambo ry'ibanga?",
   sendResetLink: "Ohereza link",
+  resetLinkDescription: "Ohereza ubutumwa bwo guhindura ijambo ry'ibanga kuri imeri yawe.",
   backToAuth: "Subira inyuma",
   resetPassword: "Hindura Ijambo ry'ibanga",
   newPassword: "Ijambo ry'ibanga rishya",
   confirmPassword: "Emeza ijambo ry'ibanga",
-  passwordTooShort: "Ijambo ry'ibanga rigomba kuba nibura inyuguti 6",
+  passwordTooShort: "Ijambo ry'ibanga rigomba kuba nibura inyuguti 8",
   passwordsDontMatch: "Amagambo y'ibanga ntabwo ahura",
   passwordChanged: "Ijambo ry'ibanga ryahinduwe neza",
   resetLinkSent: "Twakoherereje email yo guhindura ijambo ry'ibanga",
@@ -43,7 +46,7 @@ const rw = {
   emailNotConfirmed: "Banza wemeze imeri yawe unyuze kuri link yohererejwe muri email yawe.",
   rateLimitExceeded: "Wagerageje inshuro nyinshi mu kanya gato. Banza utegereze gato.",
   signUpSuccessEmailSent: "Konti yafunguwe neza! Niba bikenewe kwemeza imeri, reba ubutumwa muri email yawe hanyuma winjire.",
-  passwordHint: "Nibura inyuguti 6 (koresha inyuguti, imibare n'ibimenyetso)",
+  passwordHint: "Nibura inyuguti 8 (koresha inyuguti, imibare n'ibimenyetso)",
 
   // ---- Navigation ----
   dashboard: "Incamake",
@@ -174,6 +177,13 @@ const rw = {
   // ---- Reports ----
   dailyReport: "Raporo y'umunsi",
   monthlyReport: "Raporo y'ukwezi",
+  weeklyReport: "Raporo y'icyumweru",
+  annualReport: "Raporo y'umwaka",
+  weekOf: "Icyumweru gitangirira",
+  year: "Umwaka",
+  totalCustomers: "Abakiriya bose",
+  allBranches: "Amashami yose",
+  reportDescription: "Kora raporo z'ibikorwa, inyungu n'abakiriya.",
   inventoryReport: "Raporo y'ububiko",
   salesReport: "Raporo y'igurisha",
   downloadPdf: "Manura PDF",
@@ -247,14 +257,23 @@ const rw = {
   inviteWorker: "Ohereza ubutumire ku mukozi",
   workerInvited: "Ubutumire bwo gufungura konti bwoherejwe neza.",
   workerInviteDesc: "Umukozi azahabwa email yo gushyiraho ijambo ry'ibanga, hanyuma ajye yinjira gusa.",
+  createWorker: "Fungura konti y'umukozi",
+  workerCreated: "Konti y'umukozi yafunguwe neza.",
+  workerCreationDesc: "Shyiraho ijambo ry'ibanga ry'ibanze, urihe umukozi mu buryo bwizewe. Ashobora kurisimbuza amaze kwinjira.",
+  initialPassword: "Ijambo ry'ibanga ry'ibanze",
 };
 
 const en: Partial<typeof rw> = {
-  tagline: "Inventory and Business Management System",
+  appName: "UFBC AGRODEALER", tagline: "Inventory and Business Management System",
   signIn: "Sign in", signUp: "Sign up", signOut: "Sign out", email: "Email", password: "Password",
   fullName: "Full name", phone: "Phone", forgotPassword: "Forgot password?", sendResetLink: "Send reset link",
+  resetLinkDescription: "Send a password reset link to your email address.",
   backToAuth: "Back to sign in", resetPassword: "Reset password", newPassword: "New password", confirmPassword: "Confirm password",
+  ownerLogin: "Sign in as owner", workerLogin: "Sign in as worker", ownerLoginDesc: "Manage workers, branches, and inventory.", workerLoginDesc: "Access operations for your assigned branch.", wrongPortal: "This account is not permitted to use this sign-in area.",
+  passwordTooShort: "Password must contain at least 8 characters.", passwordsDontMatch: "Passwords do not match.", passwordChanged: "Password changed successfully.", resetLinkSent: "We sent a password reset email.", invalidCredentials: "Invalid email or password. Please try again.", userAlreadyRegistered: "This email already has an account. Please sign in.", weakPassword: "This password is too weak. Use a stronger password.", emailNotConfirmed: "Confirm your email using the link we sent before signing in.", rateLimitExceeded: "Too many requests were made in a short time. Please wait before trying again.",
+  passwordHint: "At least 8 characters. Use letters, numbers, and symbols.",
   dashboard: "Overview", branches: "Branches", products: "Products", purchases: "Purchases", sales: "Sales",
+  dailyReport: "Daily report", weeklyReport: "Weekly report", monthlyReport: "Monthly report", annualReport: "Annual report", weekOf: "Week starting", year: "Year", totalCustomers: "Total customers", allBranches: "All branches", reportDescription: "Generate reports for activity, profit, and customers.",
   inventory: "Inventory", reports: "Reports", expenses: "Expenses", users: "Users", customers: "Customers",
   targets: "Sales targets", audit: "Activity audit", transfers: "Stock transfers", save: "Save", cancel: "Cancel",
   delete: "Delete", edit: "Edit", update: "Update", search: "Search", add: "Add", addFirst: "Add first",
@@ -269,20 +288,43 @@ const en: Partial<typeof rw> = {
   saved: "Saved successfully", deleted: "Deleted successfully", updated: "Updated successfully", error: "An error occurred", errorGeneric: "An error occurred. Please try again or contact an administrator.", requiredField: "This field is required", invalidEmail: "Invalid email address", noStockEnough: "Insufficient stock", chooseBranch: "Select a branch", chooseProduct: "Select a product", chooseCustomer: "Select a customer", onlyOwner: "Owner access only", unauthorized: "Not authorized",
   language: "Language", kinyarwanda: "Kinyarwanda", english: "English", account: "My account", accountSettings: "Account settings", changePassword: "Change password", passwordUpdated: "Password updated successfully.", removeWorker: "Remove worker", removeWorkerTitle: "Remove worker from the system?", removeWorkerDesc: "This worker's account will be permanently closed. Their business activity records will remain.", workerRemoved: "Worker removed from the system.", cannotRemoveOwner: "Owners cannot be removed here.",
   addWorker: "Add worker", inviteWorker: "Invite worker", workerInvited: "Account invitation sent successfully.", workerInviteDesc: "The worker will receive an email to set a password, then only needs to sign in.",
+  createWorker: "Create worker", workerCreated: "Worker account created successfully.", workerCreationDesc: "Set an initial password and share it securely with the worker. They can change it after signing in.", initialPassword: "Initial password",
 };
 
+function englishLabel(key: string) {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/^./, (letter) => letter.toUpperCase());
+}
+
 export function getLanguage(): AppLanguage {
-  if (typeof window === "undefined") return "rw";
-  return window.localStorage.getItem("ufbc-language") === "en" ? "en" : "rw";
+  return currentLanguage;
 }
 
 export function setLanguage(language: AppLanguage) {
-  window.localStorage.setItem("ufbc-language", language);
+  currentLanguage = language;
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem("ufbc-language", language);
+    document.documentElement.lang = language;
+    window.dispatchEvent(new Event("ufbc-language-change"));
+  }
+}
+
+export function restoreLanguage() {
+  if (typeof window === "undefined") return;
+  const language = window.localStorage.getItem("ufbc-language") === "en" ? "en" : "rw";
+  currentLanguage = language;
+  document.documentElement.lang = language;
+}
+
+/** Selects a complete language-specific phrase for route-level copy. */
+export function localized(kinyarwanda: string, english: string) {
+  return getLanguage() === "en" ? english : kinyarwanda;
 }
 
 export const t = new Proxy(rw, {
   get(target, property: keyof typeof rw) {
-    return getLanguage() === "en" ? en[property] ?? target[property] : target[property];
+    return getLanguage() === "en" ? en[property] ?? englishLabel(String(property)) : target[property];
   },
 });
 
@@ -327,6 +369,17 @@ export function formatErrorMessage(err: unknown): string {
 
   const lower = `${msg} ${code}`.toLowerCase();
 
+  if (
+    lower.includes("failed to send a request to the edge function") ||
+    lower.includes("functionsfetcherror") ||
+    lower.includes("function not found")
+  ) {
+    return localized(
+      "Serivisi yo kongeramo umukozi ntirashyirwa kuri Supabase. Banza wohereze Edge Function ya create-worker.",
+      "The worker-invitation service is not deployed to Supabase. Deploy the create-worker Edge Function first.",
+    );
+  }
+
   // RLS / permissions
   if (
     lower.includes("row-level security") ||
@@ -335,7 +388,10 @@ export function formatErrorMessage(err: unknown): string {
     lower.includes("permission denied") ||
     code === "42501"
   ) {
-    return "Ntabwo wemerewe gukora iki gikorwa. Cyemerewe gusa nyir'ubucuruzi.";
+    return localized(
+      "Ntabwo wemerewe gukora iki gikorwa. Cyemerewe gusa nyir'ubucuruzi.",
+      "You do not have permission to complete this action. Only the business owner may do so.",
+    );
   }
 
   // Duplicate / Unique constraint
@@ -344,12 +400,15 @@ export function formatErrorMessage(err: unknown): string {
     lower.includes("duplicate key") ||
     code === "23505"
   ) {
-    return "Iki kintu cyangwa iyi kode isanzwe ibaho mu bubiko.";
+    return localized("Iri zina cyangwa iyi kode isanzwe ikoreshwa.", "This name or code is already in use.");
   }
 
   // Foreign key / Reference constraint
   if (lower.includes("foreign key") || code === "23503") {
-    return "Ntibishoboka: Iki kintu gifite amakuru akigenderaho mu yandi madosiye.";
+    return localized(
+      "Ntibishoboka kuko aya makuru ari gukoreshwa ahandi muri sisitemu.",
+      "This cannot be completed because the record is used elsewhere in the system.",
+    );
   }
 
   // Stock not enough

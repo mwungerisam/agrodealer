@@ -10,7 +10,6 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
       value={language}
       onValueChange={(value) => {
         setLanguage(value as AppLanguage);
-        window.location.reload();
       }}
     >
       <SelectTrigger

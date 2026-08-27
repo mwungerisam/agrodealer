@@ -10,6 +10,7 @@ interface PdfOpts {
   sales: Array<{
     date: string;
     product: string;
+    customer: string;
     qty: number;
     price: number;
     profit: number;
@@ -33,6 +34,7 @@ interface PdfOpts {
     purchases: number;
     expenses: number;
     net: number;
+    customers: number;
   };
 }
 
@@ -58,7 +60,7 @@ export async function generateReportPdf(opts: PdfOpts) {
   (opts.sales || []).slice(0, 25).forEach((s) => {
     if (y > 270) { doc.addPage(); y = 12; }
     doc.text(
-      `${s.date} · ${s.product} · ${s.qty} · ${s.price} · ${money(s.profit)}`,
+      `${s.date} - ${s.product} - ${s.customer} - ${s.qty} - ${s.price} - ${money(s.profit)}`,
       14,
       y,
     );
@@ -107,6 +109,8 @@ export async function generateReportPdf(opts: PdfOpts) {
   doc.text(`Ibyakoreshejwe: ${money(opts.totals.expenses)}`, 140, y);
   y += 5;
   doc.text(`Inyungu iheruka: ${money(opts.totals.net)}`, 14, y);
+  y += 5;
+  doc.text(`Abakiriya: ${opts.totals.customers}`, 14, y);
 
   doc.save(`${opts.title.replace(/\s+/g, "_")}.pdf`);
 }
