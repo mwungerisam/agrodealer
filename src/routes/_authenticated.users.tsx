@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { t, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { isStrongPassword } from "@/lib/password-policy";
 import { Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/users")({
@@ -207,10 +208,10 @@ function UsersPage() {
             <div className="space-y-1"><Label htmlFor="worker-name">{t.fullName}</Label><Input id="worker-name" value={worker.fullName} onChange={(e) => setWorker({ ...worker, fullName: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-email">{t.email}</Label><Input id="worker-email" type="email" value={worker.email} onChange={(e) => setWorker({ ...worker, email: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-phone">{t.phone}</Label><Input id="worker-phone" value={worker.phone} onChange={(e) => setWorker({ ...worker, phone: e.target.value })} /></div>
-            <div className="space-y-1"><Label htmlFor="worker-password">{t.initialPassword}</Label><Input id="worker-password" type="password" minLength={8} value={worker.initialPassword} onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })} /></div>
+            <div className="space-y-1"><Label htmlFor="worker-password">{t.initialPassword}</Label><Input id="worker-password" type="password" minLength={12} value={worker.initialPassword} onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })} /></div>
             <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
           </div>
-          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || worker.initialPassword.length < 8 || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
+          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || !isStrongPassword(worker.initialPassword) || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <AlertDialog open={!!removing} onOpenChange={(open) => !open && setRemoving(null)}>

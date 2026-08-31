@@ -79,12 +79,26 @@ function Dashboard() {
 
       const invQ = supabase
         .from("inventory")
-        .select("branch_id, product_id, quantity, avg_cost, products(name, unit, min_stock), branches(name)");
+        .select(isOwner
+          ? "branch_id, product_id, quantity, avg_cost, products(name, unit, min_stock), branches(name)"
+          : "branch_id, product_id, quantity, avg_cost");
       if (!isOwner && branchId) invQ.eq("branch_id", branchId);
-      const { data: inv } = await invQ;
+      const { data: inventoryRows } = await invQ;
+      let inv = inventoryRows ?? [];
+
+      if (!isOwner) {
+        const { data: workerProducts, error: workerProductsError } = await supabase
+          .from("worker_products")
+          .select("id, name, unit, min_stock");
+        if (workerProductsError) throw workerProductsError;
+        const productMap = new Map((workerProducts ?? []).flatMap((product) => product.id ? [[product.id, product] as const] : []));
+        inv = inv.map((item) => ({ ...item, products: productMap.get(item.product_id) }));
+      }
 
       const branches = isOwner ? ((await supabase.from("branches").select("id")).data ?? []) : [];
-      const products = (await supabase.from("products").select("id")).data ?? [];
+      const products = isOwner
+        ? (await supabase.from("products").select("id")).data ?? []
+        : (await supabase.from("worker_products").select("id")).data ?? [];
       const workers = isOwner ? ((await supabase.from("user_roles").select("id")).data ?? []) : [];
       const expensesQ = supabase.from("expenses").select("amount").eq("expense_date", today);
       if (!isOwner && branchId) expensesQ.eq("branch_id", branchId);

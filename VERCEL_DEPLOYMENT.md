@@ -28,3 +28,5 @@ https://<your-domain>/reset-password
 ```
 
 After changing environment variables or the Vercel build settings, redeploy the project. Vercel does not apply new build-time variables to an already deployed bundle.
+
+Before launch, configure Supabase Authentication with public sign-ups disabled, a 12-character password minimum, login rate limits, and multi-factor authentication for every owner. Set the `ALLOWED_ORIGINS` Edge Function secret in Supabase to the exact production origin(s); this is separate from Vercel environment variables.

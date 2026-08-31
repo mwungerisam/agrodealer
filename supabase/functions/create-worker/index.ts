@@ -1,9 +1,35 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function corsHeaders(request: Request): HeadersInit {
+  const origin = request.headers.get("Origin");
+  if (origin && !allowedOrigins.includes(origin)) return {};
+  return {
+    ...(origin ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : {}),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+}
+
+function isStrongPassword(value: string): boolean {
+  return value.length >= 12
+    && /[a-z]/.test(value)
+    && /[A-Z]/.test(value)
+    && /\d/.test(value)
+    && /[^A-Za-z0-9]/.test(value);
+}
 
 Deno.serve(async (request) => {
+  const headers = corsHeaders(request);
+  if (request.headers.get("Origin") && Object.keys(headers).length === 0) {
+    return Response.json({ error: "Origin is not allowed" }, { status: 403 });
+  }
   if (request.method === "OPTIONS") return new Response("ok", { headers });
+  if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers });
   const authorization = request.headers.get("Authorization");
   if (!authorization) return Response.json({ error: "Unauthorized" }, { status: 401, headers });
 
@@ -18,14 +44,22 @@ Deno.serve(async (request) => {
   if (!email || !fullName || !branchId || !initialPassword) {
     return Response.json({ error: "Name, email, branch, and an initial password are required" }, { status: 400, headers });
   }
-  if (String(initialPassword).length < 8) {
-    return Response.json({ error: "The initial password must contain at least 8 characters" }, { status: 400, headers });
+  if (!isStrongPassword(String(initialPassword))) {
+    return Response.json({ error: "The initial password must have 12+ characters with upper- and lower-case letters, a number, and a symbol" }, { status: 400, headers });
   }
+
+  const { data: branch } = await admin
+    .from("branches")
+    .select("id")
+    .eq("id", branchId)
+    .eq("status", true)
+    .maybeSingle();
+  if (!branch) return Response.json({ error: "Choose an active branch" }, { status: 400, headers });
 
   // Create the account directly rather than sending an invitation email. This
   // keeps worker onboarding available when the provider's email quota is busy.
   const { data, error } = await admin.auth.admin.createUser({
-    email: email.trim(),
+    email: String(email).trim().toLowerCase(),
     password: initialPassword,
     email_confirm: true,
     user_metadata: { full_name: fullName.trim(), phone: phone?.trim() ?? "" },

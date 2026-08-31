@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ShoppingCart, UserPlus } from "lucide-react";
+import { Plus, ShoppingCart, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useIsOwner, useBranchId, useAuth } from "@/lib/auth-context";
@@ -69,9 +69,8 @@ function SalesPage() {
         return (data ?? []) as SaleProduct[];
       }
       const { data, error } = await supabase
-        .from("products")
+        .from("worker_products")
         .select("id, name, unit, selling_price, category")
-        .eq("status", true)
         .order("name");
       if (error) throw error;
       return data ?? [];
@@ -95,16 +94,24 @@ function SalesPage() {
   });
 
   const { data: sales = [] } = useQuery({
-    queryKey: ["sales-list"],
+    queryKey: ["sales-list", isOwner],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("sales")
         .select(
-          "id, quantity, selling_price, profit, sale_date, customer_name, products(name, unit), branches(name), created_by",
+          "id, product_id, quantity, selling_price, profit, sale_date, customer_name, branches(name), created_by",
         )
         .order("sale_date", { ascending: false })
         .limit(200);
-      return data ?? [];
+      if (error) throw error;
+
+      const productQuery = isOwner
+        ? supabase.from("products").select("id, name, unit")
+        : supabase.from("worker_products").select("id, name, unit");
+      const { data: productRows, error: productError } = await productQuery;
+      if (productError) throw productError;
+      const productMap = new Map((productRows ?? []).map((product) => [product.id, product]));
+      return (data ?? []).map((sale) => ({ ...sale, products: productMap.get(sale.product_id) }));
     },
   });
 
@@ -178,18 +185,6 @@ function SalesPage() {
     onError: (e: Error) => {
       toast.error(formatErrorMessage(e));
     },
-  });
-
-  const del = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("sales").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t.deleted);
-      qc.invalidateQueries({ queryKey: ["sales-list"] });
-    },
-    onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
   const resetForm = () => {
@@ -395,13 +390,12 @@ function SalesPage() {
                 <TableHead>{t.total}</TableHead>
                 {isOwner && <TableHead>{t.profit}</TableHead>}
                 {isOwner && <TableHead>{t.branch}</TableHead>}
-                <TableHead className="text-right">{t.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sales.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isOwner ? 9 : 7} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
+                  <TableCell colSpan={isOwner ? 8 : 6} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
                 </TableRow>
               ) : (
                 sales.map((s: any) => (
@@ -414,13 +408,6 @@ function SalesPage() {
                     <TableCell>{money(Number(s.selling_price) * Number(s.quantity))}</TableCell>
                     {isOwner && <TableCell className="font-semibold text-green-600">+{money(s.profit)}</TableCell>}
                     {isOwner && <TableCell>{s.branches?.name}</TableCell>}
-                    <TableCell className="text-right">
-                      {isOwner && (
-                        <Button size="icon" variant="ghost" onClick={() => { if (confirm(t.confirmDelete)) del.mutate(s.id); }}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))
               )}

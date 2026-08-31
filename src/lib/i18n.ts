@@ -45,7 +45,7 @@ const rw = {
   rateLimitExceeded: "Wagerageje inshuro nyinshi mu kanya gato. Banza utegereze gato.",
   signUpSuccessEmailSent:
     "Konti yafunguwe neza! Niba bikenewe kwemeza imeri, reba ubutumwa muri email yawe hanyuma winjire.",
-  passwordHint: "Nibura inyuguti 8 (koresha inyuguti, imibare n'ibimenyetso)",
+  passwordHint: "Nibura inyuguti 12, inyuguti nto n'inkuru, imibare n'ibimenyetso.",
 
   // ---- Navigation ----
   dashboard: "Incamake",
@@ -297,7 +297,7 @@ const en: Partial<typeof rw> = {
   emailNotConfirmed: "Confirm your email using the link we sent before signing in.",
   rateLimitExceeded:
     "Too many requests were made in a short time. Please wait before trying again.",
-  passwordHint: "At least 8 characters. Use letters, numbers, and symbols.",
+  passwordHint: "Use at least 12 characters, including upper- and lower-case letters, a number, and a symbol.",
   dashboard: "Overview",
   branches: "Branches",
   products: "Products",

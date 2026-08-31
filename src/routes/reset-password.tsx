@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Loader2, Sprout } from "lucide-react";
 import { t } from "@/lib/i18n";
+import { isStrongPassword } from "@/lib/password-policy";
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
@@ -38,7 +39,7 @@ function ResetPasswordPage() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (password.length < 8) return toast.error(t.passwordTooShort);
+    if (!isStrongPassword(password)) return toast.error(t.weakPassword);
     if (password !== confirm) return toast.error(t.passwordsDontMatch);
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -78,7 +79,7 @@ function ResetPasswordPage() {
                     id="new-pw"
                     type="password"
                     required
-                    minLength={8}
+                    minLength={12}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                   />
@@ -89,7 +90,7 @@ function ResetPasswordPage() {
                     id="confirm-pw"
                     type="password"
                     required
-                    minLength={8}
+                    minLength={12}
                     value={confirm}
                     onChange={(event) => setConfirm(event.target.value)}
                   />

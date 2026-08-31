@@ -5,15 +5,15 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     tanstackStart({ server: { entry: "server" } }),
-    // Emit Vercel Build Output API artifacts instead of a long-running Node server.
-    // The application is deployed on Vercel, so relying on Nitro's local default
-    // (`node-server`) produces an artifact Vercel cannot reliably run.
-    nitro({ preset: "vercel" }),
+    // Nitro's Vercel preset creates deployment artifacts during a production
+    // build, but it takes over Vite's request handler in development and
+    // returns 404 for the app routes. Let TanStack Start handle dev requests.
+    ...(command === "build" ? [nitro({ preset: "vercel" })] : []),
     viteReact(),
     tailwindcss(),
     tsconfigPaths(),
   ],
-});
+}));

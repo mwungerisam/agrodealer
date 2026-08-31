@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
@@ -86,15 +86,6 @@ function PurchasesPage() {
       setOpen(false);
       setForm({ ...form, product_id: "", supplier: "", quantity: 0, buying_price: 0, transport_cost: 0 });
     },
-    onError: (e: Error) => toast.error(formatErrorMessage(e)),
-  });
-
-  const del = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("purchases").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success(t.deleted); qc.invalidateQueries({ queryKey: ["purchases"] }); },
     onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
 
@@ -188,12 +179,11 @@ function PurchasesPage() {
                 <TableHead>{t.quantity}</TableHead>
                 <TableHead>{t.buyingPrice}</TableHead>
                 <TableHead>{t.transportCost}</TableHead>
-                {isOwner && <TableHead className="text-right">{t.actions}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {purchases.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
               ) : (
                 purchases.map((p: any) => (
                   <TableRow key={p.id}>
@@ -204,13 +194,6 @@ function PurchasesPage() {
                     <TableCell>{p.quantity} {p.products?.unit}</TableCell>
                     <TableCell>{money(p.buying_price)}</TableCell>
                     <TableCell>{money(p.transport_cost)}</TableCell>
-                    {isOwner && (
-                      <TableCell className="text-right">
-                        <Button size="icon" variant="ghost" onClick={() => { if (confirm(t.confirmDelete)) del.mutate(p.id); }}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))
               )}

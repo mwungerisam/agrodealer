@@ -503,6 +503,7 @@ export type Database = {
           branch_id: string | null
           created_at: string
           id: string
+          is_primary_owner: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -510,6 +511,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           id?: string
+          is_primary_owner?: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -517,6 +519,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           id?: string
+          is_primary_owner?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -532,7 +535,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      worker_products: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"] | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          min_stock: number | null
+          name: string | null
+          selling_price: number | null
+          sku: string | null
+          status: boolean | null
+          unit: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adjust_stock: {

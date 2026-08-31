@@ -3,6 +3,7 @@ import { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isStrongPassword } from "@/lib/password-policy";
 import { t, formatErrorMessage } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ function AccountPage() {
 
   const changePassword = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (password.length < 8) return toast.error(t.passwordTooShort);
+    if (!isStrongPassword(password)) return toast.error(t.weakPassword);
     if (password !== confirmation) return toast.error(t.passwordsDontMatch);
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -44,8 +45,8 @@ function AccountPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={changePassword} className="space-y-4">
-            <div className="space-y-2"><Label htmlFor="new-password">{t.newPassword}</Label><Input id="new-password" type="password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
-            <div className="space-y-2"><Label htmlFor="confirm-password">{t.confirmPassword}</Label><Input id="confirm-password" type="password" minLength={8} required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor="new-password">{t.newPassword}</Label><Input id="new-password" type="password" minLength={12} required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor="confirm-password">{t.confirmPassword}</Label><Input id="confirm-password" type="password" minLength={12} required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
             <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{t.changePassword}</Button>
           </form>
         </CardContent>
