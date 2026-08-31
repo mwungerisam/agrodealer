@@ -13,8 +13,8 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
     meta: [
-      { title: "Hindura Ijambo ry'ibanga | UFBC Agrodealer" },
-      { name: "description", content: "Hindura ijambo ry'ibanga rya konti yawe ya UFBC Agrodealer." },
+      { title: "Reset Password | UFBC Agrodealer" },
+      { name: "description", content: "Reset the password for your UFBC Agrodealer account." },
     ],
   }),
 });
@@ -27,7 +27,6 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    // Supabase places the recovery session in the URL hash; the client picks it up.
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
@@ -37,15 +36,15 @@ function ResetPasswordPage() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.length < 6) return toast.error("Ijambo ry'ibanga rigomba kuba nibura inyuguti 6");
-    if (password !== confirm) return toast.error("Amagambo y'ibanga ntabwo ahura");
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (password.length < 8) return toast.error(t.passwordTooShort);
+    if (password !== confirm) return toast.error(t.passwordsDontMatch);
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Ijambo ry'ibanga ryahinduwe neza");
+    toast.success(t.passwordChanged);
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
@@ -59,14 +58,11 @@ function ResetPasswordPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{t.appName}</h1>
         </div>
-
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle>Hindura ijambo ry'ibanga</CardTitle>
+            <CardTitle>{t.resetPassword}</CardTitle>
             <CardDescription>
-              {ready
-                ? "Andika ijambo ry'ibanga rishya."
-                : "Turategereza kwemeza link yawe..."}
+              {ready ? "Enter your new password." : "Confirming your reset link..."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -77,30 +73,30 @@ function ResetPasswordPage() {
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-pw">Ijambo ry'ibanga rishya</Label>
+                  <Label htmlFor="new-pw">{t.newPassword}</Label>
                   <Input
                     id="new-pw"
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-pw">Emeza ijambo ry'ibanga</Label>
+                  <Label htmlFor="confirm-pw">{t.confirmPassword}</Label>
                   <Input
                     id="confirm-pw"
                     type="password"
                     required
-                    minLength={6}
+                    minLength={8}
                     value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
+                    onChange={(event) => setConfirm(event.target.value)}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Bika
+                  {t.save}
                 </Button>
               </form>
             )}

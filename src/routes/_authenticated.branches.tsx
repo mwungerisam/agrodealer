@@ -115,7 +115,7 @@ function BranchesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.branches}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.branches}</h1>
           <p className="text-sm text-muted-foreground">Kugabanya n'guhindura amashami y'ubucuruzi</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -156,7 +156,7 @@ function BranchesPage() {
         <CardHeader>
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
         </CardHeader>
         <CardContent>

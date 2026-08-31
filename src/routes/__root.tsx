@@ -13,23 +13,22 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { t } from "@/lib/i18n";
-import { LanguageProvider } from "@/components/language-provider";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">{t.unauthorized} — {t.error}</h2>
+        <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Urupapuro ushaka ntirubaho cyangwa rwarahinduwe.
+          The page you requested does not exist or may have moved.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Subira ku ntangiriro
+            Return home
           </Link>
         </div>
       </div>
@@ -42,19 +41,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     console.error("[AppError]", error);
   }, [error]);
   const router = useRouter();
-
   const friendly = (error.message || "").toLowerCase();
-  const isAuth = friendly.includes("auth") || friendly.includes("unauthorized") || friendly.includes("un authenticated");
-
+  const isAuth =
+    friendly.includes("auth") ||
+    friendly.includes("unauthorized") ||
+    friendly.includes("un authenticated");
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold">
-          {isAuth ? "Kwinjira birakenewe" : "Habaye ikibazo"}
+          {isAuth ? "Sign-in required" : "Something went wrong"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isAuth
-            ? "Injira muri konti yawe cyangwa ubaze nyir'ubucuruzi ubufasha."
+            ? "Sign in to your account or contact the business owner for assistance."
             : t.errorGeneric}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -65,13 +65,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Ongera ugerageza
+            Try again
           </button>
           <button
             onClick={() => (window.location.href = "/auth")}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
           >
-            Injira
+            Sign in
           </button>
         </div>
       </div>
@@ -84,15 +84,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "UFBC Agrodealer — Ivunganirizo ry'Ububiko n'Ubucuruzi" },
+      { title: "UFBC Agrodealer | Inventory and Business Management" },
       {
         name: "description",
-        content: "Sisitemu yoroshye yo gucunga ububiko, kurangura no kugurisha ifumbire n'imbuto muri Rwanda.",
+        content:
+          "A professional system for managing agricultural inventory, purchases, sales, and branches.",
       },
       { property: "og:title", content: "UFBC Agrodealer" },
       {
         property: "og:description",
-        content: "Ivunganirizo ry'Ububiko n'Ubucuruzi bwa ifumbire n'imbuto.",
+        content: "Inventory and business management for agricultural retailers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -121,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="rw">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
@@ -135,14 +136,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <Outlet />
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <Outlet />
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

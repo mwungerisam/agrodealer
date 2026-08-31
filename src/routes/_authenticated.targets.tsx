@@ -6,13 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
 import { useIsOwner, useBranchId } from "@/lib/auth-context";
+import { localDateInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/targets")({
   component: TargetsPage,
@@ -21,10 +42,10 @@ export const Route = createFileRoute("/_authenticated/targets")({
 function TargetsPage() {
   const isOwner = useIsOwner();
   const workerBranchId = useBranchId();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateInput();
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const monthStart = localDateInput(new Date(now.getFullYear(), now.getMonth(), 1));
+  const monthEnd = localDateInput(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
   if (!isOwner && !workerBranchId) return <Navigate to="/dashboard" replace />;
 
@@ -41,7 +62,8 @@ function TargetsPage() {
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
     queryFn: async () =>
-      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
+      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ??
+      [],
   });
 
   const { data: workers = [] } = useQuery({
@@ -58,9 +80,7 @@ function TargetsPage() {
       try {
         let q = supabase
           .from("sales_targets")
-          .select(
-            "id, target_amount, period_type, period_date, user_id, branch_id, branches(name)",
-          )
+          .select("id, target_amount, period_type, period_date, user_id, branch_id, branches(name)")
           .order("created_at", { ascending: false });
         if (!isOwner && workerBranchId) q = q.eq("branch_id", workerBranchId);
         const { data, error } = await q.limit(200);
@@ -179,7 +199,7 @@ function TargetsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">{t.targets}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.targets}</h1>
           <p className="text-sm text-muted-foreground">Intego zo kugurisha n'inyuguti yawe</p>
         </div>
 
@@ -217,25 +237,29 @@ function TargetsPage() {
           <Card className="border-none shadow-sm">
             <CardContent className="p-5">
               <p className="text-xs font-medium text-muted-foreground">{t.todaySales}</p>
-              <p className="text-2xl font-bold text-green-600">{money(workerTargets.dailyAchieved)}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {money(workerTargets.dailyAchieved)}
+              </p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardContent className="p-5">
               <p className="text-xs font-medium text-muted-foreground">{t.monthlyRevenue}</p>
-              <p className="text-2xl font-bold text-green-600">{money(workerTargets.monthlyAchieved)}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {money(workerTargets.monthlyAchieved)}
+              </p>
             </CardContent>
           </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Ibikorwa by'ingenzi</CardTitle>
+            <CardTitle>Key actions</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Intego zo kugurisha zerekana ibyifuzo wakwifuzoho kugira ngo usuzume.
-              Intego zo guhindura zandamijwe n'umuyobozi.
+              Sales targets help teams monitor performance and focus on the right priorities. They
+              are set and managed by the business owner.
             </p>
           </CardContent>
         </Card>
@@ -248,8 +272,8 @@ function TargetsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.targets}</h1>
-          <p className="text-sm text-muted-foreground">Shyiraho intego zo kugurisha</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.targets}</h1>
+          <p className="text-sm text-muted-foreground">Set and manage sales targets.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -259,36 +283,57 @@ function TargetsPage() {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{t.add} {t.salesTarget}</DialogTitle>
+              <DialogTitle>
+                {t.add} {t.salesTarget}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t.branch} *</Label>
-                <Select value={form.branch_id} onValueChange={(v) => setForm({ ...form, branch_id: v })}>
-                  <SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger>
+                <Select
+                  value={form.branch_id}
+                  onValueChange={(v) => setForm({ ...form, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {branches.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t.worker}</Label>
-                <Select value={form.user_id} onValueChange={(v) => setForm({ ...form, user_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Hitamo umukozi cyangwa ushyireho intego y'ishami" /></SelectTrigger>
+                <Select
+                  value={form.user_id}
+                  onValueChange={(v) => setForm({ ...form, user_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ishami ryose</SelectItem>
+                    <SelectItem value="">All branch workers</SelectItem>
                     {workers.map((w: any) => (
-                      <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.full_name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t.period} *</Label>
-                <Select value={form.period_type} onValueChange={(v: any) => setForm({ ...form, period_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.period_type}
+                  onValueChange={(v: any) => setForm({ ...form, period_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">{t.daily}</SelectItem>
                     <SelectItem value="monthly">{t.monthly}</SelectItem>
@@ -297,16 +342,29 @@ function TargetsPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t.date}</Label>
-                <Input type="date" value={form.period_date} onChange={(e) => setForm({ ...form, period_date: e.target.value })} />
+                <Input
+                  type="date"
+                  value={form.period_date}
+                  onChange={(e) => setForm({ ...form, period_date: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t.targetAmount} (RWF) *</Label>
-                <Input type="number" min={0} value={form.target_amount} onChange={(e) => setForm({ ...form, target_amount: e.target.value })} placeholder="500000" />
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.target_amount}
+                  onChange={(e) => setForm({ ...form, target_amount: e.target.value })}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t.cancel}</Button>
-              <Button onClick={() => save.mutate()} disabled={save.isPending}>{t.save}</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                {t.cancel}
+              </Button>
+              <Button onClick={() => save.mutate()} disabled={save.isPending}>
+                {t.save}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -328,7 +386,7 @@ function TargetsPage() {
               {targets.map((tr: any) => (
                 <TableRow key={tr.id}>
                   <TableCell>{tr.branches?.name ?? "—"}</TableCell>
-                  <TableCell>{tr.profiles?.full_name ?? "Ishami ryose"}</TableCell>
+                  <TableCell>{tr.profiles?.full_name ?? "All branch workers"}</TableCell>
                   <TableCell>{tr.period_type === "daily" ? t.daily : t.monthly}</TableCell>
                   <TableCell>{fmtDate(tr.period_date)}</TableCell>
                   <TableCell className="text-right">{money(tr.target_amount)}</TableCell>
@@ -339,7 +397,9 @@ function TargetsPage() {
         </div>
       ) : (
         <Card>
-          <CardHeader><CardTitle>{t.noData}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>{t.noData}</CardTitle>
+          </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">Urakoze guhitamo intego zo kugurisha.</p>
           </CardContent>

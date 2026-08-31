@@ -2,7 +2,14 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { t, fmtDateTime, numberFmt } from "@/lib/i18n";
 import { useIsOwner } from "@/lib/auth-context";
@@ -22,7 +29,9 @@ function AuditPage() {
       try {
         const { data, error } = await supabase
           .from("audit_log")
-          .select("action, entity, entity_id, branch_id, user_id, created_at, details, branches(name)")
+          .select(
+            "action, entity, entity_id, branch_id, user_id, created_at, details, branches(name)",
+          )
           .order("created_at", { ascending: false })
           .limit(500);
         if (error) return [];
@@ -36,13 +45,13 @@ function AuditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t.audit}</h1>
-        <p className="text-sm text-muted-foreground">Reba ibikorwa byose byanditseho n'umukoresha</p>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.audit}</h1>
+        <p className="text-sm text-muted-foreground">Review recorded activity by user.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Ibikorwa biheruka ({numberFmt(logs.length)})</CardTitle>
+          <CardTitle>Recent activity ({numberFmt(logs.length)})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -51,16 +60,18 @@ function AuditPage() {
                 <TableRow>
                   <TableHead>{t.date}</TableHead>
                   <TableHead>{t.actions}</TableHead>
-                  <TableHead>Igikoresho</TableHead>
+                  <TableHead>Entity</TableHead>
                   <TableHead>{t.branch}</TableHead>
-                  <TableHead>Umukoresha</TableHead>
-                  <TableHead>Imiterere</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      {t.noData}
+                    </TableCell>
                   </TableRow>
                 ) : (
                   logs.map((log: any, i: number) => (
@@ -73,7 +84,9 @@ function AuditPage() {
                       </TableCell>
                       <TableCell className="font-medium">{log.entity}</TableCell>
                       <TableCell>{log.branches?.name ?? "—"}</TableCell>
-                      <TableCell>{log.profiles?.full_name ?? log.user_id?.slice(0, 8) ?? "—"}</TableCell>
+                      <TableCell>
+                        {log.profiles?.full_name ?? log.user_id?.slice(0, 8) ?? "—"}
+                      </TableCell>
                       <TableCell>
                         <pre className="max-w-xs overflow-x-auto text-xs">
                           {JSON.stringify(log.details || {}, null, 0)}

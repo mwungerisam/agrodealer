@@ -134,7 +134,7 @@ function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-        <h1 className="text-3xl font-bold">{t.users}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.users}</h1>
         <p className="text-sm text-muted-foreground">{localized("Cunga abakoresha, inshingano zabo n'amashami bakoreramo.", "Manage users, their roles, and their branch assignments.")}</p>
         </div>
         <Button onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />{t.addWorker}</Button>
@@ -186,7 +186,7 @@ function UsersPage() {
                         onValueChange={(v) => updateRow.mutate({ id: r.id, role: r.role, branch_id: v === "none" ? null : v })}
                         disabled={r.role === "owner"}
                       >
-                        <SelectTrigger className="w-52"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">—</SelectItem>
                           {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
@@ -208,7 +208,7 @@ function UsersPage() {
             <div className="space-y-1"><Label htmlFor="worker-email">{t.email}</Label><Input id="worker-email" type="email" value={worker.email} onChange={(e) => setWorker({ ...worker, email: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-phone">{t.phone}</Label><Input id="worker-phone" value={worker.phone} onChange={(e) => setWorker({ ...worker, phone: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-password">{t.initialPassword}</Label><Input id="worker-password" type="password" minLength={8} value={worker.initialPassword} onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })} /></div>
-            <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || worker.initialPassword.length < 8 || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
         </DialogContent>

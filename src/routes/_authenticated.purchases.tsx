@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
+import { localDateInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/purchases")({
   component: PurchasesPage,
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/purchases")({
 function PurchasesPage() {
   const { role, user } = useAuth();
   const isOwner = role?.role === "owner";
+  if (role && !isOwner) return <Navigate to="/dashboard" replace />;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -31,7 +33,7 @@ function PurchasesPage() {
     quantity: 0,
     buying_price: 0,
     transport_cost: 0,
-    purchase_date: new Date().toISOString().slice(0, 10),
+    purchase_date: localDateInput(),
   });
 
   const { data: branches = [] } = useQuery({
@@ -100,8 +102,8 @@ function PurchasesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.purchases}</h1>
-          <p className="text-sm text-muted-foreground">{localized("Andika amakuru y'amasoko y'ibicuruzwa.", "Record product purchases.")}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.purchases}</h1>
+          <p className="text-sm text-muted-foreground">{localized("Andika amakuru y'amasoko y'ibicuruzwa.", "Owner-only stock receiving. Select an approved catalogue product and record the supplier purchase.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -114,7 +116,7 @@ function PurchasesPage() {
                 <div className="space-y-2 sm:col-span-2">
                   <Label>{t.branch} *</Label>
                   <Select value={form.branch_id} onValueChange={(v) => setForm({ ...form, branch_id: v })}>
-                    <SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                     </SelectContent>
@@ -127,7 +129,7 @@ function PurchasesPage() {
                   const p: any = products.find((x: any) => x.id === v);
                   setForm({ ...form, product_id: v, buying_price: p?.buying_price ?? 0 });
                 }}>
-                  <SelectTrigger><SelectValue placeholder={t.chooseProduct} /></SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {products.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.unit})</SelectItem>)}
                   </SelectContent>

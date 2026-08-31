@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { t, money, numberFmt, fmtDate } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { generateReportPdf } from "@/lib/pdf";
 import { toast } from "sonner";
+import { localDateInput, localMonthInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
@@ -21,9 +22,10 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const { role } = useAuth();
   const isOwner = role?.role === "owner";
+  if (role && !isOwner) return <Navigate to="/dashboard" replace />;
   const [tab, setTab] = useState<"daily" | "weekly" | "monthly" | "annual">("daily");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [date, setDate] = useState(localDateInput());
+  const [month, setMonth] = useState(localMonthInput());
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [branchId, setBranchId] = useState<string>(role?.branch_id ?? "all");
 
@@ -41,14 +43,14 @@ function ReportsPage() {
           start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
           const end = new Date(start);
           end.setDate(start.getDate() + 6);
-          return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+          return { from: localDateInput(start), to: localDateInput(end) };
         })()
       : tab === "monthly"
         ? (() => {
             const [y, m] = month.split("-").map(Number);
             const start = new Date(y, m - 1, 1);
             const end = new Date(y, m, 0);
-            return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+            return { from: localDateInput(start), to: localDateInput(end) };
           })()
         : { from: `${year}-01-01`, to: `${year}-12-31` };
 
@@ -140,7 +142,7 @@ function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t.reports}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.reports}</h1>
         <p className="text-sm text-muted-foreground">{t.reportDescription}</p>
       </div>
 

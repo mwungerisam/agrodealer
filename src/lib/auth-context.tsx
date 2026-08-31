@@ -15,6 +15,7 @@ interface AuthCtx {
   session: Session | null;
   role: UserRoleInfo | null;
   loading: boolean;
+  unavailable: boolean;
   refreshRole: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRoleInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
 
   const loadRole = async (uid: string) => {
     try {
@@ -61,9 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let active = true;
+    const startupTimeout = window.setTimeout(() => {
+      if (!active) return;
+      setUnavailable(true);
+      setLoading(false);
+    }, 12_000);
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!active) return;
       setSession(s);
       setUser(s?.user ?? null);
+      setUnavailable(false);
       if (s?.user) {
         setTimeout(() => loadRole(s.user.id), 0);
       } else {
@@ -71,17 +82,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) {
-        loadRole(data.session.user.id).finally(() => setLoading(false));
-      } else {
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        if (data.session?.user) {
+          loadRole(data.session.user.id).finally(() => active && setLoading(false));
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setUnavailable(true);
         setLoading(false);
-      }
-    });
+      })
+      .finally(() => window.clearTimeout(startupTimeout));
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      active = false;
+      window.clearTimeout(startupTimeout);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -91,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         role,
         loading,
+        unavailable,
         refreshRole: async () => {
           if (user) await loadRole(user.id);
         },

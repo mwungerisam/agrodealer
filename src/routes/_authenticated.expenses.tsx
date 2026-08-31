@@ -13,6 +13,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { localDateInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   component: ExpensesPage,
@@ -27,7 +28,7 @@ function ExpensesPage() {
     branch_id: role?.branch_id ?? "",
     description: "",
     amount: 0,
-    expense_date: new Date().toISOString().slice(0, 10),
+    expense_date: localDateInput(),
   });
 
   const { data: branches = [] } = useQuery({
@@ -73,7 +74,7 @@ function ExpensesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.expenses}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.expenses}</h1>
           <p className="text-sm text-muted-foreground">{localized("Andika ibisohoka by'ubucuruzi.", "Record business expenses.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -87,7 +88,7 @@ function ExpensesPage() {
                 <div className="space-y-2">
                   <Label>{t.branch} *</Label>
                   <Select value={form.branch_id} onValueChange={(v) => setForm({ ...form, branch_id: v })}>
-                    <SelectTrigger><SelectValue placeholder={t.chooseBranch} /></SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                     </SelectContent>

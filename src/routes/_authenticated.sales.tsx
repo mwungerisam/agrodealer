@@ -14,10 +14,20 @@ import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
 import { useIsOwner, useBranchId, useAuth } from "@/lib/auth-context";
 import { SetupBanner } from "@/components/setup-banner";
+import { localDateInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/sales")({
   component: SalesPage,
 });
+
+type SaleProduct = {
+  id: string;
+  name: string;
+  unit: string;
+  selling_price: number;
+  category: "ifumbire" | "imbuto";
+  buying_price?: number;
+};
 
 function SalesPage() {
   const { user } = useAuth();
@@ -34,7 +44,7 @@ function SalesPage() {
     product_id: "",
     quantity: "",
     selling_price: "",
-    sale_date: new Date().toISOString().slice(0, 10),
+    sale_date: localDateInput(),
   });
 
   // Default branch for worker
@@ -46,17 +56,29 @@ function SalesPage() {
       (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["products-active"],
-    queryFn: async () =>
-      (await supabase
+  const { data: products = [] } = useQuery<SaleProduct[]>({
+    queryKey: ["products-active", isOwner],
+    queryFn: async () => {
+      if (isOwner) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, name, unit, selling_price, category, buying_price")
+          .eq("status", true)
+          .order("name");
+        if (error) throw error;
+        return (data ?? []) as SaleProduct[];
+      }
+      const { data, error } = await supabase
         .from("products")
-        .select("id, name, unit, selling_price, category, buying_price")
+        .select("id, name, unit, selling_price, category")
         .eq("status", true)
-        .order("name")).data ?? [],
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
-  const selectedProduct = products.find((p: any) => p.id === form.product_id);
+  const selectedProduct = products.find((p) => p.id === form.product_id);
 
   const { data: stock } = useQuery({
     queryKey: ["stock-for-sale", form.branch_id, form.product_id],
@@ -177,7 +199,7 @@ function SalesPage() {
       product_id: "",
       quantity: "",
       selling_price: "",
-      sale_date: new Date().toISOString().slice(0, 10),
+      sale_date: localDateInput(),
     });
     setCustomerName("");
     setCustomerPhone("");
@@ -192,16 +214,16 @@ function SalesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.sales}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.sales}</h1>
           <p className="text-sm text-muted-foreground">{localized("Andika amakuru y'igurisha ry'ibicuruzwa.", "Record product sales.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button disabled={branches.length === 0 || products.length === 0}>
+            <Button onClick={openNew} disabled={branches.length === 0 || products.length === 0}>
               <Plus className="mr-2 h-4 w-4" /> {t.add}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-2xl overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>{t.add} {t.sales}</DialogTitle>
             </DialogHeader>
@@ -216,7 +238,7 @@ function SalesPage() {
                     onValueChange={(v) => setForm({ ...form, branch_id: v, product_id: "", quantity: "", selling_price: "" })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t.chooseBranch} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((b: any) => (
@@ -233,7 +255,6 @@ function SalesPage() {
                 <Input
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Nshya cyangwa uhiliye"
                 />
               </div>
               <div className="space-y-2">
@@ -241,7 +262,6 @@ function SalesPage() {
                 <Input
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="07XXXXXXXX"
                 />
               </div>
 
@@ -260,12 +280,16 @@ function SalesPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t.chooseProduct} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {products.map((p: any) => (
+                    {isOwner ? products.map((p: any) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name} ({p.unit}) — {t.buyingPrice}: {money(p.buying_price)}
+                      </SelectItem>
+                    )) : products.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.unit})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -278,7 +302,7 @@ function SalesPage() {
               </div>
 
               {/* Quantity */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t.quantity} *</Label>
                   <Input
@@ -287,7 +311,6 @@ function SalesPage() {
                     step="0.01"
                     value={form.quantity}
                     onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -297,7 +320,6 @@ function SalesPage() {
                     min={0}
                     value={isOwner ? form.selling_price : catalogPrice.toString()}
                     onChange={(e) => setForm({ ...form, selling_price: e.target.value })}
-                    placeholder={selectedProduct ? money(selectedProduct.selling_price) : ""}
                     readOnly={!isOwner}
                   />
                 </div>
@@ -319,12 +341,12 @@ function SalesPage() {
                   <CardTitle className="text-base">{t.totalAmount}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex justify-between text-xl font-bold">
+                  <div className="flex flex-wrap items-end justify-between gap-3 text-xl font-bold">
                     <span>{money(lineTotal)}</span>
-                    <span className="text-green-600">{money((unitPrice - Number(selectedProduct?.buying_price ?? 0)) * qty)}</span>
+                    {isOwner && <span className="text-green-600">{money((unitPrice - Number(selectedProduct?.buying_price ?? 0)) * qty)}</span>}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {localized("Inyungu ibarwa hakurikijwe igiciro cyashyizweho n'umuyobozi.", "Profit is calculated from the owner-set catalog price.")}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {isOwner ? localized("Inyungu ibarwa hakurikijwe igiciro cyashyizweho n'umuyobozi.", "Profit is calculated from the owner-set catalog price.") : "The total uses the approved selling price."}
                   </p>
                 </CardContent>
               </Card>
@@ -337,9 +359,9 @@ function SalesPage() {
               )}
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t.cancel}</Button>
-              <Button onClick={() => save.mutate()} disabled={save.isPending || !!canSave()}>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">{t.cancel}</Button>
+              <Button onClick={() => save.mutate()} disabled={save.isPending || !!canSave()} className="w-full sm:w-auto">
                 {save.isPending && <span className="mr-2 animate-spin">↻</span>}
                 EMEZA IGURISHA
               </Button>
@@ -371,7 +393,7 @@ function SalesPage() {
                 <TableHead>{t.quantity}</TableHead>
                 <TableHead>{t.sellingPrice}</TableHead>
                 <TableHead>{t.total}</TableHead>
-                <TableHead>{t.profit}</TableHead>
+                {isOwner && <TableHead>{t.profit}</TableHead>}
                 {isOwner && <TableHead>{t.branch}</TableHead>}
                 <TableHead className="text-right">{t.actions}</TableHead>
               </TableRow>
@@ -379,7 +401,7 @@ function SalesPage() {
             <TableBody>
               {sales.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
+                  <TableCell colSpan={isOwner ? 9 : 7} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell>
                 </TableRow>
               ) : (
                 sales.map((s: any) => (
@@ -390,7 +412,7 @@ function SalesPage() {
                     <TableCell>{s.quantity} {s.products?.unit}</TableCell>
                     <TableCell>{money(s.selling_price)}</TableCell>
                     <TableCell>{money(Number(s.selling_price) * Number(s.quantity))}</TableCell>
-                    <TableCell className="font-semibold text-green-600">+{money(s.profit)}</TableCell>
+                    {isOwner && <TableCell className="font-semibold text-green-600">+{money(s.profit)}</TableCell>}
                     {isOwner && <TableCell>{s.branches?.name}</TableCell>}
                     <TableCell className="text-right">
                       {isOwner && (

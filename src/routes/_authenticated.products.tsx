@@ -26,6 +26,7 @@ interface Product {
   buying_price: number;
   selling_price: number;
   unit: string;
+  min_stock: number;
   status: boolean;
 }
 
@@ -35,6 +36,7 @@ type Form = {
   buying_price: number;
   selling_price: number;
   unit: string;
+  min_stock: number;
   status: boolean;
 };
 const empty: Form = {
@@ -43,6 +45,7 @@ const empty: Form = {
   buying_price: 0,
   selling_price: 0,
   unit: "kg",
+  min_stock: 1,
   status: true,
 };
 
@@ -62,7 +65,7 @@ function ProductsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, name, category, buying_price, selling_price, unit, status")
+        .select("id, name, category, buying_price, selling_price, unit, min_stock, status")
         .order("name");
       return (data ?? []) as Product[];
     },
@@ -71,13 +74,16 @@ function ProductsPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t.requiredField);
-      if (form.buying_price < 0 || form.selling_price < 0) throw new Error(t.invalidNumber);
+      if (!Number.isFinite(form.buying_price) || !Number.isFinite(form.selling_price) || !Number.isFinite(form.min_stock) || form.buying_price < 0 || form.selling_price < 0 || form.min_stock < 0) {
+        throw new Error(t.invalidNumber);
+      }
       const payload = {
         name: form.name.trim(),
         category: form.category,
         buying_price: Number(form.buying_price),
         selling_price: Number(form.selling_price),
         unit: form.unit.trim() || "kg",
+        min_stock: Number(form.min_stock),
         status: form.status,
       };
       if (editing) {
@@ -131,6 +137,7 @@ function ProductsPage() {
       buying_price: p.buying_price,
       selling_price: p.selling_price,
       unit: p.unit,
+      min_stock: p.min_stock,
       status: p.status,
     });
     setOpen(true);
@@ -140,7 +147,7 @@ function ProductsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.products}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.products}</h1>
           <p className="text-sm text-muted-foreground">{localized("Cunga ibicuruzwa byawe.", "Manage your products.")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -168,7 +175,7 @@ function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t.unit}</Label>
-                <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="kg, sac, kilo" />
+                <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.buyingPrice} *</Label>
@@ -177,6 +184,10 @@ function ProductsPage() {
               <div className="space-y-2">
                 <Label>{t.sellingPrice} *</Label>
                 <Input type="number" min={0} value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: +e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t.minStock}</Label>
+                <Input type="number" min={0} step="0.01" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: +e.target.value })} />
               </div>
               <div className="flex items-center gap-3 sm:col-span-2">
                 <Switch checked={form.status} onCheckedChange={(v) => setForm({ ...form, status: v })} />
@@ -195,7 +206,7 @@ function ProductsPage() {
         <CardHeader className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={cat} onValueChange={setCat}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -215,13 +226,14 @@ function ProductsPage() {
                 <TableHead>{t.unit}</TableHead>
                 <TableHead>{t.buyingPrice}</TableHead>
                 <TableHead>{t.sellingPrice}</TableHead>
+                <TableHead>{t.minStock}</TableHead>
                 <TableHead>{t.status}</TableHead>
                 <TableHead className="text-right">{t.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="py-10 text-center text-muted-foreground">{t.noData}</TableCell></TableRow>
               ) : (
                 filtered.map((p) => (
                   <TableRow key={p.id}>
@@ -230,6 +242,7 @@ function ProductsPage() {
                     <TableCell>{p.unit}</TableCell>
                     <TableCell>{money(p.buying_price)}</TableCell>
                     <TableCell>{money(p.selling_price)}</TableCell>
+                    <TableCell>{p.min_stock}</TableCell>
                     <TableCell>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status ? "bg-green-100/50 text-green-800" : "bg-red-100/50 text-red-800"}`}>
                         {p.status ? t.active : t.inactive}

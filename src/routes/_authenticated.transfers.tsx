@@ -6,9 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeftRight, Search, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, numberFmt, fmtDate, formatErrorMessage, localized } from "@/lib/i18n";
@@ -50,17 +70,14 @@ function TransfersPage() {
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
     queryFn: async () =>
-      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
+      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ??
+      [],
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ["products-active"],
     queryFn: async () =>
-      (await supabase
-        .from("products")
-        .select("id, name, unit")
-        .eq("status", true)
-        .order("name"))
+      (await supabase.from("products").select("id, name, unit").eq("status", true).order("name"))
         .data ?? [],
   });
 
@@ -101,7 +118,8 @@ function TransfersPage() {
 
   const canSave = () => {
     if (!form.from_branch) return t.chooseBranch;
-    if (!form.to_branch) return localized("Hitamo ishami ryo kwakira ububiko.", "Select the receiving branch.");
+    if (!form.to_branch)
+      return localized("Hitamo ishami ryo kwakira ububiko.", "Select the receiving branch.");
     if (!form.product_id) return t.chooseProduct;
     if (!form.quantity || Number(form.quantity) <= 0) return t.invalidNumber;
     if (Number(form.quantity) > availableQty) return t.noStockEnough;
@@ -153,8 +171,13 @@ function TransfersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.transfers}</h1>
-          <p className="text-sm text-muted-foreground">{localized("Hindura ububiko ubugenzure hagati y'amashami.", "Move inventory between branches with a complete record.")}</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.transfers}</h1>
+          <p className="text-sm text-muted-foreground">
+            {localized(
+              "Hindura ububiko ubugenzure hagati y'amashami.",
+              "Move inventory between branches with a complete record.",
+            )}
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -169,14 +192,16 @@ function TransfersPage() {
             <div className="space-y-4">
               {/* From branch */}
               <div className="space-y-2">
-                <Label>Ishami rikusabaye *</Label>
+                <Label>Sending branch *</Label>
                 <Select
                   value={form.from_branch}
-                  onValueChange={(v) => setForm({ ...form, from_branch: v, product_id: "", quantity: "" })}
+                  onValueChange={(v) =>
+                    setForm({ ...form, from_branch: v, product_id: "", quantity: "" })
+                  }
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={localized("Hitamo ishami ryo koherezaho", "Select the sending branch")} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {fromBranches.map((b: any) => (
@@ -190,14 +215,16 @@ function TransfersPage() {
 
               {/* To branch */}
               <div className="space-y-2">
-                <Label>Ishami kigezweho *</Label>
+                <Label>Receiving branch *</Label>
                 <Select
                   value={form.to_branch}
-                  onValueChange={(v) => setForm({ ...form, to_branch: v, product_id: "", quantity: "" })}
+                  onValueChange={(v) =>
+                    setForm({ ...form, to_branch: v, product_id: "", quantity: "" })
+                  }
                   disabled={branches.length <= 1}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={localized("Hitamo ishami ryakira", "Select the receiving branch")} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {toBranches.map((b: any) => (
@@ -215,10 +242,12 @@ function TransfersPage() {
                 <Select
                   value={form.product_id}
                   onValueChange={(v) => setForm({ ...form, product_id: v, quantity: "" })}
-                  disabled={!form.from_branch || !form.to_branch || form.from_branch === form.to_branch}
+                  disabled={
+                    !form.from_branch || !form.to_branch || form.from_branch === form.to_branch
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t.chooseProduct} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((p: any) => (
@@ -230,9 +259,9 @@ function TransfersPage() {
                 </Select>
                 {form.from_branch && form.product_id && selectedProduct && (
                   <p className="text-xs text-muted-foreground">
-                    {t.currentStock}: <strong>{numberFmt(availableQty)}</strong> {selectedProduct.unit ?? ""}
-                    {" "}·{" "}
-                    {t.avgCost}: {money(Number(sourceStock?.avg_cost ?? 0))}
+                    {t.currentStock}: <strong>{numberFmt(availableQty)}</strong>{" "}
+                    {selectedProduct.unit ?? ""} · {t.avgCost}:{" "}
+                    {money(Number(sourceStock?.avg_cost ?? 0))}
                   </p>
                 )}
               </div>
@@ -246,29 +275,30 @@ function TransfersPage() {
                   step="0.01"
                   value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  placeholder="0"
                   max={availableQty}
                 />
                 {form.from_branch && form.product_id && Number(form.quantity) > availableQty && (
                   <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                     <AlertTriangle className="h-3 w-3" />
-                    {t.noStockEnough} — Hari {numberFmt(availableQty)} {selectedProduct?.unit ?? ""} ariko wifuza {form.quantity} {selectedProduct?.unit ?? ""}.
+                    {t.noStockEnough} — Hari {numberFmt(availableQty)} {selectedProduct?.unit ?? ""}{" "}
+                    ariko wifuza {form.quantity} {selectedProduct?.unit ?? ""}.
                   </div>
                 )}
               </div>
 
               {/* Reason */}
               <div className="space-y-2">
-                <Label>Ingingo (si ngombwa)</Label>
+                <Label>Reason (optional)</Label>
                 <Input
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  placeholder="urugero: guhindura, imodoka, ..."
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t.cancel}</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                {t.cancel}
+              </Button>
               <Button
                 onClick={() => save.mutate()}
                 disabled={save.isPending || !!canSave()}
@@ -276,7 +306,7 @@ function TransfersPage() {
               >
                 {save.isPending && <span className="animate-spin">↻</span>}
                 <ArrowLeftRight className="h-4 w-4" />
-                EMEZA KOTHEREZA
+                Confirm transfer
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -286,13 +316,40 @@ function TransfersPage() {
       <SetupBanner
         steps={[
           ...(branches.length === 0
-            ? [{ message: localized("Banza wongereho ishami mbere yo kwimura ububiko.", "Add a branch before transferring inventory."), to: "/branches", label: t.branches }]
+            ? [
+                {
+                  message: localized(
+                    "Banza wongereho ishami mbere yo kwimura ububiko.",
+                    "Add a branch before transferring inventory.",
+                  ),
+                  to: "/branches",
+                  label: t.branches,
+                },
+              ]
             : []),
           ...(branches.length > 0 && branches.length < 2
-            ? [{ message: localized("Ongeraho nibura amashami abiri kugira ngo ubashe kwimura ububiko.", "Add at least two branches before transferring inventory."), to: "/branches", label: t.branches }]
+            ? [
+                {
+                  message: localized(
+                    "Ongeraho nibura amashami abiri kugira ngo ubashe kwimura ububiko.",
+                    "Add at least two branches before transferring inventory.",
+                  ),
+                  to: "/branches",
+                  label: t.branches,
+                },
+              ]
             : []),
           ...(products.length === 0
-            ? [{ message: localized("Banza wongereho igicuruzwa mbere yo kwimura ububiko.", "Add a product before transferring inventory."), to: "/products", label: t.products }]
+            ? [
+                {
+                  message: localized(
+                    "Banza wongereho igicuruzwa mbere yo kwimura ububiko.",
+                    "Add a product before transferring inventory.",
+                  ),
+                  to: "/products",
+                  label: t.products,
+                },
+              ]
             : []),
         ]}
       />
@@ -301,11 +358,10 @@ function TransfersPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Ibikorwa bya kohereza ({numberFmt(movements.length)})</CardTitle>
+            <CardTitle>Transfer activity ({numberFmt(movements.length)})</CardTitle>
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder={t.search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -329,7 +385,12 @@ function TransfersPage() {
                 {filteredMovements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                      {movements.length === 0 ? t.noData : localized("Nta yandi makuru ahari.", "No additional records are available.")}
+                      {movements.length === 0
+                        ? t.noData
+                        : localized(
+                            "Nta yandi makuru ahari.",
+                            "No additional records are available.",
+                          )}
                     </TableCell>
                   </TableRow>
                 ) : (

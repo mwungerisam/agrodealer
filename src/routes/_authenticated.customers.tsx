@@ -128,7 +128,7 @@ function CustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">{t.customers}</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.customers}</h1>
           <p className="text-sm text-muted-foreground">Kugabanya n'guhindura abakiriya babarakora</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -148,7 +148,7 @@ function CustomersPage() {
                   onValueChange={(v) => setForm({ ...form, branch_id: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t.chooseBranch} />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {branches.map((b: any) => (
@@ -162,7 +162,6 @@ function CustomersPage() {
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Nshya cyangwa uhiliye"
                 />
               </div>
               <div className="space-y-2">
@@ -170,7 +169,6 @@ function CustomersPage() {
                 <Input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="07XXXXXXXX"
                 />
               </div>
             </div>
@@ -187,7 +185,6 @@ function CustomersPage() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={t.search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,8 @@ function InventoryPage() {
   const branchId = useBranchId();
   const qc = useQueryClient();
 
+  if (!isOwner) return <Navigate to="/dashboard" replace />;
+
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustingItem, setAdjustingItem] = useState<{
     branch_id: string;
@@ -44,7 +46,7 @@ function InventoryPage() {
     staleTime: 60_000,
     queryFn: async () => {
       let q = supabase.from("inventory").select(
-        "quantity, product_id, branch_id, products(name, unit, buying_price, category), branches(name)",
+        "quantity, avg_cost, product_id, branch_id, products(name, unit, category, min_stock), branches(name, code)",
       );
       if (!isOwner && branchId) q = q.eq("branch_id", branchId);
       const { data } = await q;
@@ -60,7 +62,7 @@ function InventoryPage() {
   const lowCount = inventory.filter(
     (i: any) =>
       Number(i.quantity) > 0 &&
-      Number(i.quantity) <= 10,
+      Number(i.quantity) <= Number(i.products?.min_stock ?? 0),
   ).length;
   const outCount = inventory.filter((i: any) => Number(i.quantity) <= 0).length;
 
@@ -108,7 +110,7 @@ function InventoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t.inventory}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.inventory}</h1>
         <p className="text-sm text-muted-foreground">
           {isOwner
             ? localized("Reba ububiko bwose n'imiterere yabwo muri buri shami.", "Review all inventory and its status in every branch.")
@@ -164,7 +166,6 @@ function InventoryPage() {
                 step="0.01"
                 value={newQty}
                 onChange={(e) => setNewQty(e.target.value)}
-                placeholder="0"
               />
               {Number(newQty) > (adjustingItem?.current_qty ?? 0) && (
                 <p className="text-xs text-green-600">
@@ -182,7 +183,6 @@ function InventoryPage() {
               <Input
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="urugero: ibyo hakoreye, imodaka, ibindi..."
               />
             </div>
           </div>
@@ -231,7 +231,7 @@ function InventoryPage() {
                 ) : (
                   inventory.map((i: any) => {
                     const qty = Number(i.quantity);
-                    const min = Number(i.products?.min_stock ?? 10);
+                    const min = Number(i.products?.min_stock ?? 0);
                     const value = qty * Number(i.avg_cost);
                     return (
                       <TableRow key={`${i.branch_id}-${i.product_id}`}>

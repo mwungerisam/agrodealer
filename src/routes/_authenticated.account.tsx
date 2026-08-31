@@ -34,7 +34,7 @@ function AccountPage() {
   return (
     <div className="max-w-xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t.accountSettings}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.accountSettings}</h1>
         <p className="text-sm text-muted-foreground">{user?.email}</p>
       </div>
       <Card>

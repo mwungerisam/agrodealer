@@ -1,9 +1,7 @@
-// Centralized Kinyarwanda translation dictionary for UFBC AGRODEALER.
-// All user-facing strings route through this object so terminology stays
-// consistent and no text is hardcoded in components.
-export type AppLanguage = "rw" | "en";
+// English is the single supported language for the production application.
+export type AppLanguage = "en";
 
-let currentLanguage: AppLanguage = "rw";
+let currentLanguage: AppLanguage = "en";
 
 const rw = {
   appName: "UFBC AGRODEALER",
@@ -45,7 +43,8 @@ const rw = {
   weakPassword: "Ijambo ry'ibanga ryoroshye cyane. Koresha ijambo rikomeye (urugero: Ibanga#2026).",
   emailNotConfirmed: "Banza wemeze imeri yawe unyuze kuri link yohererejwe muri email yawe.",
   rateLimitExceeded: "Wagerageje inshuro nyinshi mu kanya gato. Banza utegereze gato.",
-  signUpSuccessEmailSent: "Konti yafunguwe neza! Niba bikenewe kwemeza imeri, reba ubutumwa muri email yawe hanyuma winjire.",
+  signUpSuccessEmailSent:
+    "Konti yafunguwe neza! Niba bikenewe kwemeza imeri, reba ubutumwa muri email yawe hanyuma winjire.",
   passwordHint: "Nibura inyuguti 8 (koresha inyuguti, imibare n'ibimenyetso)",
 
   // ---- Navigation ----
@@ -250,81 +249,289 @@ const rw = {
   passwordUpdated: "Ijambo ry'ibanga ryahinduwe neza.",
   removeWorker: "Kuraho umukozi",
   removeWorkerTitle: "Kuraho umukozi muri sisitemu?",
-  removeWorkerDesc: "Konti y'uyu mukozi izafungwa burundu. Amakuru y'ibikorwa yakoze azaguma muri sisitemu.",
+  removeWorkerDesc:
+    "Konti y'uyu mukozi izafungwa burundu. Amakuru y'ibikorwa yakoze azaguma muri sisitemu.",
   workerRemoved: "Umukozi yavanywe muri sisitemu.",
   cannotRemoveOwner: "Abayobozi ntibavanwa muri iki gice.",
   addWorker: "Ongeraho umukozi",
   inviteWorker: "Ohereza ubutumire ku mukozi",
   workerInvited: "Ubutumire bwo gufungura konti bwoherejwe neza.",
-  workerInviteDesc: "Umukozi azahabwa email yo gushyiraho ijambo ry'ibanga, hanyuma ajye yinjira gusa.",
+  workerInviteDesc:
+    "Umukozi azahabwa email yo gushyiraho ijambo ry'ibanga, hanyuma ajye yinjira gusa.",
   createWorker: "Fungura konti y'umukozi",
   workerCreated: "Konti y'umukozi yafunguwe neza.",
-  workerCreationDesc: "Shyiraho ijambo ry'ibanga ry'ibanze, urihe umukozi mu buryo bwizewe. Ashobora kurisimbuza amaze kwinjira.",
+  workerCreationDesc:
+    "Shyiraho ijambo ry'ibanga ry'ibanze, urihe umukozi mu buryo bwizewe. Ashobora kurisimbuza amaze kwinjira.",
   initialPassword: "Ijambo ry'ibanga ry'ibanze",
 };
 
 const en: Partial<typeof rw> = {
-  appName: "UFBC AGRODEALER", tagline: "Inventory and Business Management System",
-  signIn: "Sign in", signUp: "Sign up", signOut: "Sign out", email: "Email", password: "Password",
-  fullName: "Full name", phone: "Phone", forgotPassword: "Forgot password?", sendResetLink: "Send reset link",
+  appName: "UFBC AGRODEALER",
+  tagline: "Inventory and Business Management System",
+  signIn: "Sign in",
+  signUp: "Sign up",
+  signOut: "Sign out",
+  email: "Email",
+  password: "Password",
+  fullName: "Full name",
+  phone: "Phone",
+  forgotPassword: "Forgot password?",
+  sendResetLink: "Send reset link",
   resetLinkDescription: "Send a password reset link to your email address.",
-  backToAuth: "Back to sign in", resetPassword: "Reset password", newPassword: "New password", confirmPassword: "Confirm password",
-  ownerLogin: "Sign in as owner", workerLogin: "Sign in as worker", ownerLoginDesc: "Manage workers, branches, and inventory.", workerLoginDesc: "Access operations for your assigned branch.", wrongPortal: "This account is not permitted to use this sign-in area.",
-  passwordTooShort: "Password must contain at least 8 characters.", passwordsDontMatch: "Passwords do not match.", passwordChanged: "Password changed successfully.", resetLinkSent: "We sent a password reset email.", invalidCredentials: "Invalid email or password. Please try again.", userAlreadyRegistered: "This email already has an account. Please sign in.", weakPassword: "This password is too weak. Use a stronger password.", emailNotConfirmed: "Confirm your email using the link we sent before signing in.", rateLimitExceeded: "Too many requests were made in a short time. Please wait before trying again.",
+  backToAuth: "Back to sign in",
+  resetPassword: "Reset password",
+  newPassword: "New password",
+  confirmPassword: "Confirm password",
+  ownerLogin: "Sign in as owner",
+  workerLogin: "Sign in as worker",
+  ownerLoginDesc: "Manage workers, branches, and inventory.",
+  workerLoginDesc: "Access operations for your assigned branch.",
+  wrongPortal: "This account is not permitted to use this sign-in area.",
+  passwordTooShort: "Password must contain at least 8 characters.",
+  passwordsDontMatch: "Passwords do not match.",
+  passwordChanged: "Password changed successfully.",
+  resetLinkSent: "We sent a password reset email.",
+  invalidCredentials: "Invalid email or password. Please try again.",
+  userAlreadyRegistered: "This email already has an account. Please sign in.",
+  weakPassword: "This password is too weak. Use a stronger password.",
+  emailNotConfirmed: "Confirm your email using the link we sent before signing in.",
+  rateLimitExceeded:
+    "Too many requests were made in a short time. Please wait before trying again.",
   passwordHint: "At least 8 characters. Use letters, numbers, and symbols.",
-  dashboard: "Overview", branches: "Branches", products: "Products", purchases: "Purchases", sales: "Sales",
-  dailyReport: "Daily report", weeklyReport: "Weekly report", monthlyReport: "Monthly report", annualReport: "Annual report", weekOf: "Week starting", year: "Year", totalCustomers: "Total customers", allBranches: "All branches", reportDescription: "Generate reports for activity, profit, and customers.",
-  inventory: "Inventory", reports: "Reports", expenses: "Expenses", users: "Users", customers: "Customers",
-  targets: "Sales targets", audit: "Activity audit", transfers: "Stock transfers", save: "Save", cancel: "Cancel",
-  delete: "Delete", edit: "Edit", update: "Update", search: "Search", add: "Add", addFirst: "Add first",
-  new: "New", create: "Create", view: "View", download: "Download", select: "Select", confirm: "Confirm",
-  yes: "Yes", no: "No", loading: "Loading...", noData: "No data available", actions: "Actions",
-  export: "Export", exportCsv: "Export CSV", exportPdf: "Export PDF", refresh: "Refresh", clearFilter: "Clear filters", applyFilter: "Apply filters", all: "All",
-  name: "Name", code: "Code", address: "Address", location: "Branch", status: "Status", active: "Active", inactive: "Inactive", category: "Category",
-  buyingPrice: "Purchase price", sellingPrice: "Selling price", currentStock: "Current stock", unit: "Unit", unitPrice: "Unit price", total: "Total", totalAmount: "Total value",
-  supplier: "Supplier", branch: "Branch", branchCode: "Branch code", product: "Product", quantity: "Quantity", transportCost: "Transport cost", purchaseDate: "Purchase date", saleDate: "Sale date", expenseDate: "Date", description: "Description", amount: "Amount", role: "Role", owner: "Owner", manager: "Worker", worker: "Worker", profit: "Profit",
-  daily: "Daily", monthly: "Monthly", customer: "Customer", customerName: "Customer name", customerPhone: "Customer phone", categoryAll: "All categories", inStock: "In stock", lowStock: "Low stock", outOfStock: "Out of stock", stockStatus: "Stock status",
-  todaySales: "Today's sales", todayProfit: "Today's profit", todayExpenses: "Today's expenses", todayNet: "Today's net profit", recentTransactions: "Recent transactions", totalBranches: "Total branches", totalProducts: "Total products", totalWorkers: "Total workers", totalInventoryValue: "Total inventory value", monthlyRevenue: "Monthly revenue", monthlyProfit: "Monthly profit", currentBranch: "Current branch", salesTarget: "Sales target", salesAchieved: "Sales achieved", salesRemaining: "Remaining", businessOverview: "Business overview", branchPerformance: "Branch performance", revenue: "Revenue", expense: "Expense",
-  saved: "Saved successfully", deleted: "Deleted successfully", updated: "Updated successfully", error: "An error occurred", errorGeneric: "An error occurred. Please try again or contact an administrator.", requiredField: "This field is required", invalidEmail: "Invalid email address", noStockEnough: "Insufficient stock", chooseBranch: "Select a branch", chooseProduct: "Select a product", chooseCustomer: "Select a customer", onlyOwner: "Owner access only", unauthorized: "Not authorized",
-  language: "Language", kinyarwanda: "Kinyarwanda", english: "English", account: "My account", accountSettings: "Account settings", changePassword: "Change password", passwordUpdated: "Password updated successfully.", removeWorker: "Remove worker", removeWorkerTitle: "Remove worker from the system?", removeWorkerDesc: "This worker's account will be permanently closed. Their business activity records will remain.", workerRemoved: "Worker removed from the system.", cannotRemoveOwner: "Owners cannot be removed here.",
-  addWorker: "Add worker", inviteWorker: "Invite worker", workerInvited: "Account invitation sent successfully.", workerInviteDesc: "The worker will receive an email to set a password, then only needs to sign in.",
-  createWorker: "Create worker", workerCreated: "Worker account created successfully.", workerCreationDesc: "Set an initial password and share it securely with the worker. They can change it after signing in.", initialPassword: "Initial password",
+  dashboard: "Overview",
+  branches: "Branches",
+  products: "Products",
+  purchases: "Purchases",
+  sales: "Sales",
+  dailyReport: "Daily report",
+  weeklyReport: "Weekly report",
+  monthlyReport: "Monthly report",
+  annualReport: "Annual report",
+  weekOf: "Week starting",
+  year: "Year",
+  totalCustomers: "Total customers",
+  allBranches: "All branches",
+  reportDescription: "Generate reports for activity, profit, and customers.",
+  inventory: "Inventory",
+  reports: "Reports",
+  expenses: "Expenses",
+  users: "Users",
+  customers: "Customers",
+  targets: "Sales targets",
+  audit: "Activity audit",
+  transfers: "Stock transfers",
+  save: "Save",
+  cancel: "Cancel",
+  delete: "Delete",
+  edit: "Edit",
+  update: "Update",
+  search: "Search",
+  add: "Add",
+  addFirst: "Add first",
+  new: "New",
+  create: "Create",
+  view: "View",
+  download: "Download",
+  select: "Select",
+  confirm: "Confirm",
+  yes: "Yes",
+  no: "No",
+  loading: "Loading...",
+  noData: "No data available",
+  actions: "Actions",
+  export: "Export",
+  exportCsv: "Export CSV",
+  exportPdf: "Export PDF",
+  refresh: "Refresh",
+  clearFilter: "Clear filters",
+  applyFilter: "Apply filters",
+  all: "All",
+  name: "Name",
+  code: "Code",
+  address: "Address",
+  location: "Branch",
+  status: "Status",
+  active: "Active",
+  inactive: "Inactive",
+  category: "Category",
+  buyingPrice: "Purchase price",
+  sellingPrice: "Selling price",
+  currentStock: "Current stock",
+  unit: "Unit",
+  unitPrice: "Unit price",
+  total: "Total",
+  totalAmount: "Total value",
+  supplier: "Supplier",
+  branch: "Branch",
+  branchCode: "Branch code",
+  product: "Product",
+  quantity: "Quantity",
+  transportCost: "Transport cost",
+  purchaseDate: "Purchase date",
+  saleDate: "Sale date",
+  expenseDate: "Date",
+  description: "Description",
+  amount: "Amount",
+  role: "Role",
+  owner: "Owner",
+  manager: "Worker",
+  worker: "Worker",
+  profit: "Profit",
+  daily: "Daily",
+  monthly: "Monthly",
+  customer: "Customer",
+  customerName: "Customer name",
+  customerPhone: "Customer phone",
+  categoryAll: "All categories",
+  inStock: "In stock",
+  lowStock: "Low stock",
+  lowStockLabel: "Low stock",
+  outOfStock: "Out of stock",
+  stockStatus: "Stock status",
+  todaySales: "Today's sales",
+  todayProfit: "Today's profit",
+  todayExpenses: "Today's expenses",
+  todayNet: "Today's net profit",
+  recentTransactions: "Recent transactions",
+  totalBranches: "Total branches",
+  totalProducts: "Total products",
+  totalWorkers: "Total workers",
+  totalInventoryValue: "Total inventory value",
+  monthlyRevenue: "Monthly revenue",
+  monthlyProfit: "Monthly profit",
+  currentBranch: "Current branch",
+  salesTarget: "Sales target",
+  salesAchieved: "Sales achieved",
+  salesRemaining: "Remaining",
+  businessOverview: "Business overview",
+  branchPerformance: "Branch performance",
+  revenue: "Revenue",
+  expense: "Expense",
+  saved: "Saved successfully",
+  deleted: "Deleted successfully",
+  updated: "Updated successfully",
+  error: "An error occurred",
+  errorGeneric: "An error occurred. Please try again or contact an administrator.",
+  requiredField: "This field is required",
+  invalidEmail: "Invalid email address",
+  noStockEnough: "Insufficient stock",
+  chooseBranch: "Select a branch",
+  chooseProduct: "Select a product",
+  chooseCustomer: "Select a customer",
+  onlyOwner: "Owner access only",
+  unauthorized: "Not authorized",
+  language: "Language",
+  kinyarwanda: "Kinyarwanda",
+  english: "English",
+  account: "My account",
+  accountSettings: "Account settings",
+  changePassword: "Change password",
+  passwordUpdated: "Password updated successfully.",
+  removeWorker: "Remove worker",
+  removeWorkerTitle: "Remove worker from the system?",
+  removeWorkerDesc:
+    "This worker's account will be permanently closed. Their business activity records will remain.",
+  workerRemoved: "Worker removed from the system.",
+  cannotRemoveOwner: "Owners cannot be removed here.",
+  addWorker: "Add worker",
+  inviteWorker: "Invite worker",
+  workerInvited: "Account invitation sent successfully.",
+  workerInviteDesc:
+    "The worker will receive an email to set a password, then only needs to sign in.",
+  createWorker: "Create worker",
+  workerCreated: "Worker account created successfully.",
+  workerCreationDesc:
+    "Set an initial password and share it securely with the worker. They can change it after signing in.",
+  initialPassword: "Initial password",
+  registerAccount: "Create account",
+  registerAccountDesc: "Create a new account. An owner will assign your access.",
+  haveAccount: "Already have an account?",
+  noAccount: "Don't have an account?",
+  welcome: "Welcome back",
+  signInDesc: "Sign in to continue",
+  signUpDesc: "Create an account to get started",
+  signUpSuccessEmailSent:
+    "Account created successfully. Check your email if confirmation is required.",
+  sku: "SKU",
+  avgCost: "Average cost",
+  minStock: "Minimum stock",
+  minCost: "Minimum cost",
+  targetAmount: "Target amount",
+  period: "Period",
+  ifumbire: "Fertilizer",
+  imbuto: "Seeds",
+  remainingStock: "Remaining stock",
+  noActiveBranches: "No active branches",
+  noProducts: "No products available",
+  noStock: "No stock available",
+  setupRequired: "Setup required",
+  targetProgress: "Target progress",
+  inventoryReport: "Inventory report",
+  salesReport: "Sales report",
+  downloadPdf: "Download PDF",
+  totalSales: "Total sales",
+  totalProfit: "Total profit",
+  totalPurchases: "Total purchases",
+  totalExpenses: "Total expenses",
+  netProfit: "Net profit",
+  grossProfit: "Gross profit",
+  costOfGoods: "Cost of goods sold",
+  date: "Date",
+  from: "From",
+  to: "To",
+  productsSold: "Products sold",
+  quantitySold: "Quantity sold",
+  bestSelling: "Best selling products",
+  filter: "Filter",
+  apply: "Apply",
+  invalidNumber: "Enter a valid number",
+  noStockForProduct: "This product has no available stock",
+  addFirstBranch: "Add a branch first",
+  addFirstProduct: "Add a product first",
+  addFirstCustomer: "Add a customer first",
+  operationFailed: "Operation failed: {error}",
+  customerRequired: "A customer is required to record this sale",
+  transferComplete: "Stock transfer completed successfully",
+  stockAdjusted: "Stock adjusted successfully",
+  stockAdjustment: "Adjust stock",
+  targetSet: "Sales target saved",
+  noBranchesAvailable: "No branches available",
+  noProductsAvailable: "No products available",
+  statusSuccess: "Completed",
+  statusError: "Error",
+  statusPending: "Pending",
+  statusDraft: "Draft",
+  rwf: "RWF",
+  currency: "Currency",
 };
 
 function englishLabel(key: string) {
-  return key
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/^./, (letter) => letter.toUpperCase());
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
 }
 
 export function getLanguage(): AppLanguage {
-  return currentLanguage;
+  return "en";
 }
 
-export function setLanguage(language: AppLanguage) {
-  currentLanguage = language;
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("ufbc-language", language);
-    document.documentElement.lang = language;
-    window.dispatchEvent(new Event("ufbc-language-change"));
-  }
+export function setLanguage(_language: AppLanguage) {
+  currentLanguage = "en";
 }
 
 export function restoreLanguage() {
   if (typeof window === "undefined") return;
-  const language = window.localStorage.getItem("ufbc-language") === "en" ? "en" : "rw";
-  currentLanguage = language;
-  document.documentElement.lang = language;
+  currentLanguage = "en";
+  window.localStorage.removeItem("ufbc-language");
+  document.documentElement.lang = "en";
 }
 
-/** Selects a complete language-specific phrase for route-level copy. */
-export function localized(kinyarwanda: string, english: string) {
-  return getLanguage() === "en" ? english : kinyarwanda;
+/** Returns the approved English copy for route-level text. */
+export function localized(_kinyarwanda: string, english: string) {
+  return english;
 }
 
 export const t = new Proxy(rw, {
   get(target, property: keyof typeof rw) {
-    return getLanguage() === "en" ? en[property] ?? englishLabel(String(property)) : target[property];
+    return en[property] ?? englishLabel(String(property));
   },
 });
 
@@ -336,7 +543,10 @@ export function money(n: number | string | null | undefined) {
 
 export function fmtDate(d: string | Date | null | undefined) {
   if (!d) return "";
-  const date = typeof d === "string" ? new Date(d) : d;
+  // PostgreSQL DATE values are calendar dates, not UTC instants.
+  const date = typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)
+    ? new Date(`${d}T00:00:00`)
+    : typeof d === "string" ? new Date(d) : d;
   return date.toLocaleDateString("en-GB");
 }
 
@@ -395,12 +605,11 @@ export function formatErrorMessage(err: unknown): string {
   }
 
   // Duplicate / Unique constraint
-  if (
-    lower.includes("unique constraint") ||
-    lower.includes("duplicate key") ||
-    code === "23505"
-  ) {
-    return localized("Iri zina cyangwa iyi kode isanzwe ikoreshwa.", "This name or code is already in use.");
+  if (lower.includes("unique constraint") || lower.includes("duplicate key") || code === "23505") {
+    return localized(
+      "Iri zina cyangwa iyi kode isanzwe ikoreshwa.",
+      "This name or code is already in use.",
+    );
   }
 
   // Foreign key / Reference constraint
@@ -444,10 +653,7 @@ export function formatErrorMessage(err: unknown): string {
   ) {
     return t.userAlreadyRegistered;
   }
-  if (
-    lower.includes("email not confirmed") ||
-    lower.includes("email_not_confirmed")
-  ) {
+  if (lower.includes("email not confirmed") || lower.includes("email_not_confirmed")) {
     return t.emailNotConfirmed;
   }
   if (
@@ -457,10 +663,7 @@ export function formatErrorMessage(err: unknown): string {
   ) {
     return t.rateLimitExceeded;
   }
-  if (
-    lower.includes("invalid email") ||
-    lower.includes("email_address_invalid")
-  ) {
+  if (lower.includes("invalid email") || lower.includes("email_address_invalid")) {
     return t.invalidEmail;
   }
 
@@ -468,5 +671,3 @@ export function formatErrorMessage(err: unknown): string {
 }
 
 export const formatAuthError = formatErrorMessage;
-
-
