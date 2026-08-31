@@ -40,9 +40,18 @@ Deno.serve(async (request) => {
   const { data: role } = await admin.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
   if (role?.role !== "owner") return Response.json({ error: "Owner access required" }, { status: 403, headers });
 
-  const { email, fullName, phone, branchId, initialPassword } = await request.json();
+  const body = await request.json().catch(() => null);
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const fullName = typeof body?.fullName === "string" ? body.fullName.trim() : "";
+  const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const branchId = typeof body?.branchId === "string" ? body.branchId : "";
+  const initialPassword = typeof body?.initialPassword === "string" ? body.initialPassword : "";
+
   if (!email || !fullName || !branchId || !initialPassword) {
     return Response.json({ error: "Name, email, branch, and an initial password are required" }, { status: 400, headers });
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return Response.json({ error: "Enter a valid email address" }, { status: 400, headers });
   }
   if (!isStrongPassword(String(initialPassword))) {
     return Response.json({ error: "The initial password must have 12+ characters with upper- and lower-case letters, a number, and a symbol" }, { status: 400, headers });
@@ -59,13 +68,21 @@ Deno.serve(async (request) => {
   // Create the account directly rather than sending an invitation email. This
   // keeps worker onboarding available when the provider's email quota is busy.
   const { data, error } = await admin.auth.admin.createUser({
-    email: String(email).trim().toLowerCase(),
+    email,
     password: initialPassword,
     email_confirm: true,
-    user_metadata: { full_name: fullName.trim(), phone: phone?.trim() ?? "" },
+    user_metadata: { full_name: fullName, phone },
   });
   if (error || !data.user) return Response.json({ error: error?.message ?? "Could not create worker" }, { status: 400, headers });
   const { error: roleError } = await admin.from("user_roles").upsert({ user_id: data.user.id, role: "manager", branch_id: branchId }, { onConflict: "user_id" });
-  if (roleError) return Response.json({ error: roleError.message }, { status: 400, headers });
+  if (roleError) {
+    // Do not leave an account that cannot use the application. The owner can
+    // safely correct the branch setup and submit the worker again.
+    const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id);
+    const errorMessage = deleteError
+      ? `${roleError.message} (the account could not be rolled back; contact support before retrying)`
+      : roleError.message;
+    return Response.json({ error: errorMessage }, { status: 400, headers });
+  }
   return Response.json({ ok: true }, { headers });
 });

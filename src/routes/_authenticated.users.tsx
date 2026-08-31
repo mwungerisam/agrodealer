@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { t, formatErrorMessage, localized } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { isStrongPassword } from "@/lib/password-policy";
-import { Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/users")({
   component: UsersPage,
@@ -36,7 +36,15 @@ function UsersPage() {
   const qc = useQueryClient();
   const [removing, setRemoving] = useState<any | null>(null);
   const [adding, setAdding] = useState(false);
+  const [showInitialPassword, setShowInitialPassword] = useState(false);
   const [worker, setWorker] = useState({ fullName: "", email: "", phone: "", branchId: "", initialPassword: "" });
+  const passwordIsStrong = isStrongPassword(worker.initialPassword);
+  const canCreateWorker = Boolean(
+    worker.fullName.trim()
+    && worker.email.trim()
+    && worker.branchId
+    && passwordIsStrong,
+  );
 
   const { data: rows = [] } = useQuery({
     queryKey: ["user-roles-list"],
@@ -174,13 +182,6 @@ function UsersPage() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {r.role === "manager" && (
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRemoving(r)} aria-label={t.removeWorker}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
                     <TableCell>
                       <Select
                         value={r.branch_id ?? "none"}
@@ -194,6 +195,13 @@ function UsersPage() {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell className="text-right">
+                      {r.role === "manager" && (
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRemoving(r)} aria-label={t.removeWorker}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -201,17 +209,52 @@ function UsersPage() {
           </Table>
         </CardContent>
       </Card>
-      <Dialog open={adding} onOpenChange={setAdding}>
+      <Dialog open={adding} onOpenChange={(open) => {
+        setAdding(open);
+        if (!open) setShowInitialPassword(false);
+      }}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t.createWorker}</DialogTitle><DialogDescription>{t.workerCreationDesc}</DialogDescription></DialogHeader>
-          <div className="space-y-3">
+          <form
+            className="space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (canCreateWorker) inviteWorker.mutate();
+            }}
+          >
             <div className="space-y-1"><Label htmlFor="worker-name">{t.fullName}</Label><Input id="worker-name" value={worker.fullName} onChange={(e) => setWorker({ ...worker, fullName: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-email">{t.email}</Label><Input id="worker-email" type="email" value={worker.email} onChange={(e) => setWorker({ ...worker, email: e.target.value })} /></div>
             <div className="space-y-1"><Label htmlFor="worker-phone">{t.phone}</Label><Input id="worker-phone" value={worker.phone} onChange={(e) => setWorker({ ...worker, phone: e.target.value })} /></div>
-            <div className="space-y-1"><Label htmlFor="worker-password">{t.initialPassword}</Label><Input id="worker-password" type="password" minLength={12} value={worker.initialPassword} onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })} /></div>
+            <div className="space-y-1">
+              <Label htmlFor="worker-password">{t.initialPassword}</Label>
+              <div className="relative">
+                <Input
+                  id="worker-password"
+                  type={showInitialPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={12}
+                  required
+                  value={worker.initialPassword}
+                  onChange={(e) => setWorker({ ...worker, initialPassword: e.target.value })}
+                  className="pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowInitialPassword((visible) => !visible)}
+                  className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showInitialPassword ? "Hide initial password" : "Show initial password"}
+                  aria-pressed={showInitialPassword}
+                >
+                  {showInitialPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className={passwordIsStrong || !worker.initialPassword ? "text-xs text-muted-foreground" : "text-xs text-destructive"}>
+                {localized("Koresha nibura inyuguti 12 zirimo inyuguti nto n'inkuru, umubare n'ikimenyetso.", "Use at least 12 characters, including upper- and lower-case letters, a number, and a symbol.")}
+              </p>
+            </div>
             <div className="space-y-1"><Label>{t.branch}</Label><Select value={worker.branchId} onValueChange={(branchId) => setWorker({ ...worker, branchId })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>
-          </div>
-          <DialogFooter><Button onClick={() => inviteWorker.mutate()} disabled={!worker.fullName || !worker.email || !worker.branchId || !isStrongPassword(worker.initialPassword) || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
+            <DialogFooter><Button type="submit" disabled={!canCreateWorker || inviteWorker.isPending}>{inviteWorker.isPending ? t.loading : t.createWorker}</Button></DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
       <AlertDialog open={!!removing} onOpenChange={(open) => !open && setRemoving(null)}>
