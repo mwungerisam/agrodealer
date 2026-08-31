@@ -122,10 +122,26 @@ function UsersPage() {
       if (error) {
         // Edge Functions return their useful validation/authentication message in
         // the response body; surface it instead of a generic HTTP-status toast.
-        const response = (error as { context?: Response }).context;
-        if (response) {
-          const payload = await response.json().catch(() => null) as { error?: string } | null;
-          if (payload?.error) throw new Error(payload.error);
+        const context = (error as { context?: unknown }).context;
+        if (context && typeof context === "object") {
+          const json = (context as { json?: unknown }).json;
+          if (typeof json === "function") {
+            const payload = await (json as () => Promise<unknown>).call(context).catch(() => null);
+            if (
+              payload
+              && typeof payload === "object"
+              && "error" in payload
+              && typeof payload.error === "string"
+            ) {
+              throw new Error(payload.error);
+            }
+          }
+
+          // Some Supabase client versions expose the parsed function error
+          // directly instead of a Fetch Response.
+          if ("error" in context && typeof context.error === "string") {
+            throw new Error(context.error);
+          }
         }
         throw error;
       }
