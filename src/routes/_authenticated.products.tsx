@@ -33,19 +33,19 @@ interface Product {
 type Form = {
   name: string;
   category: "ifumbire" | "imbuto";
-  buying_price: number;
-  selling_price: number;
+  buying_price: string;
+  selling_price: string;
   unit: string;
-  min_stock: number;
+  min_stock: string;
   status: boolean;
 };
 const empty: Form = {
   name: "",
   category: "ifumbire",
-  buying_price: 0,
-  selling_price: 0,
+  buying_price: "",
+  selling_price: "",
   unit: "kg",
-  min_stock: 1,
+  min_stock: "",
   status: true,
 };
 
@@ -74,16 +74,19 @@ function ProductsPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t.requiredField);
-      if (!Number.isFinite(form.buying_price) || !Number.isFinite(form.selling_price) || !Number.isFinite(form.min_stock) || form.buying_price < 0 || form.selling_price < 0 || form.min_stock < 0) {
+      const buyingPrice = Number(form.buying_price);
+      const sellingPrice = Number(form.selling_price);
+      const minimumStock = Number(form.min_stock || 0);
+      if (!form.buying_price || !form.selling_price || !Number.isFinite(buyingPrice) || !Number.isFinite(sellingPrice) || !Number.isFinite(minimumStock) || buyingPrice < 0 || sellingPrice < 0 || minimumStock < 0) {
         throw new Error(t.invalidNumber);
       }
       const payload = {
         name: form.name.trim(),
         category: form.category,
-        buying_price: Number(form.buying_price),
-        selling_price: Number(form.selling_price),
+        buying_price: buyingPrice,
+        selling_price: sellingPrice,
         unit: form.unit.trim() || "kg",
-        min_stock: Number(form.min_stock),
+        min_stock: minimumStock,
         status: form.status,
       };
       if (editing) {
@@ -134,10 +137,10 @@ function ProductsPage() {
     setForm({
       name: p.name,
       category: p.category,
-      buying_price: p.buying_price,
-      selling_price: p.selling_price,
+      buying_price: String(p.buying_price),
+      selling_price: String(p.selling_price),
       unit: p.unit,
-      min_stock: p.min_stock,
+      min_stock: String(p.min_stock),
       status: p.status,
     });
     setOpen(true);
@@ -179,15 +182,15 @@ function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t.buyingPrice} *</Label>
-                <Input type="number" min={0} value={form.buying_price} onChange={(e) => setForm({ ...form, buying_price: +e.target.value })} />
+                <Input type="number" min={0} placeholder="Enter purchase price" value={form.buying_price} onChange={(e) => setForm({ ...form, buying_price: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.sellingPrice} *</Label>
-                <Input type="number" min={0} value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: +e.target.value })} />
+                <Input type="number" min={0} placeholder="Enter selling price" value={form.selling_price} onChange={(e) => setForm({ ...form, selling_price: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.minStock}</Label>
-                <Input type="number" min={0} step="0.01" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: +e.target.value })} />
+                <Input type="number" min={0} step="0.01" placeholder="Optional" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} />
               </div>
               <div className="flex items-center gap-3 sm:col-span-2">
                 <Switch checked={form.status} onCheckedChange={(v) => setForm({ ...form, status: v })} />

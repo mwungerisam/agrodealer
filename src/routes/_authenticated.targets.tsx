@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -29,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { FileText, Pencil, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 import { t, money, fmtDate, formatErrorMessage } from "@/lib/i18n";
 import { useIsOwner, useBranchId } from "@/lib/auth-context";
@@ -51,6 +52,8 @@ function TargetsPage() {
 
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingInstruction, setEditingInstruction] = useState(false);
+  const [instructionDraft, setInstructionDraft] = useState("");
   const [form, setForm] = useState({
     branch_id: workerBranchId ?? "",
     user_id: "",
@@ -91,6 +94,76 @@ function TargetsPage() {
       }
     },
   });
+
+  const { data: pricingInstruction } = useQuery({
+    queryKey: ["sales-pricing-instruction"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from as any)("sales_pricing_instruction")
+        .select("content, updated_at")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { content: string; updated_at: string } | null;
+    },
+  });
+
+  const updatePricingInstruction = useMutation({
+    mutationFn: async () => {
+      const content = instructionDraft.trim();
+      if (!content) throw new Error(t.requiredField);
+      const { error } = await (supabase.from as any)("sales_pricing_instruction").upsert({
+        id: true,
+        content,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Sales pricing instructions updated.");
+      setEditingInstruction(false);
+      qc.invalidateQueries({ queryKey: ["sales-pricing-instruction"] });
+    },
+    onError: (error: Error) => toast.error(formatErrorMessage(error)),
+  });
+
+  const pricingInstructionCard = (
+    <Card className="border-primary/20 bg-primary/[0.03]">
+      <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+        <div className="flex gap-3">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary"><FileText className="h-5 w-5" /></div>
+          <div>
+            <CardTitle className="text-base">Sales pricing instructions</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">Use the approved normal price shown for each product.</p>
+          </div>
+        </div>
+        {isOwner && !editingInstruction && (
+          <Button variant="outline" size="sm" onClick={() => {
+            setInstructionDraft(pricingInstruction?.content ?? "");
+            setEditingInstruction(true);
+          }}><Pencil className="mr-2 h-4 w-4" />Edit instructions</Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {editingInstruction ? (
+          <div className="space-y-3">
+            <Textarea
+              value={instructionDraft}
+              onChange={(event) => setInstructionDraft(event.target.value)}
+              className="min-h-28 bg-background"
+              aria-label="Sales pricing instructions"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingInstruction(false)} disabled={updatePricingInstruction.isPending}>{t.cancel}</Button>
+              <Button onClick={() => updatePricingInstruction.mutate()} disabled={updatePricingInstruction.isPending}><Save className="mr-2 h-4 w-4" />{t.save}</Button>
+            </div>
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+            {pricingInstruction?.content ?? "Sell every product at its normal price shown in the system. Only the business owner may update product selling prices. Do not offer unapproved discounts or change a price during a sale."}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   const { data: workerTargets } = useQuery({
     queryKey: ["worker-target-progress", workerBranchId, today, monthStart, monthEnd],
@@ -202,6 +275,8 @@ function TargetsPage() {
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.targets}</h1>
           <p className="text-sm text-muted-foreground">Intego zo kugurisha n'inyuguti yawe</p>
         </div>
+
+        {pricingInstructionCard}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
@@ -369,6 +444,8 @@ function TargetsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {pricingInstructionCard}
 
       {targets.length > 0 ? (
         <div className="overflow-x-auto">
