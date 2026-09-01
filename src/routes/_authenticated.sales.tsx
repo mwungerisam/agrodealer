@@ -313,7 +313,7 @@ function SalesPage() {
                   <Input
                     type="number"
                     min={0}
-                    value={isOwner ? form.selling_price : catalogPrice.toString()}
+                    value={selectedProduct ? (isOwner ? form.selling_price : catalogPrice.toString()) : ""}
                     onChange={(e) => setForm({ ...form, selling_price: e.target.value })}
                     readOnly={!isOwner}
                   />

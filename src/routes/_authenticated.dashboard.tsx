@@ -320,38 +320,6 @@ function Dashboard() {
     },
   });
 
-  // ---- Worker target progress ----
-  const { data: targetInfo } = useQuery({
-    queryKey: ["worker-targets", user?.id, branchId, today],
-    enabled: !isOwner && !!branchId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      if (!branchId) return { target: 0, achieved: 0 };
-      // Today's target for this worker (or branch-level if no personal target)
-      const { data: targets } = await supabase
-        .from("sales_targets")
-        .select("target_amount, period_type, period_date")
-        .eq("period_date", today)
-        .eq("period_type", "daily")
-        .or(`user_id.eq.${user?.id},and(user_id.is.null,branch_id.eq.${branchId})`)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      const { data: sales } = await supabase
-        .from("sales")
-        .select("selling_price, quantity")
-        .eq("sale_date", today)
-        .eq("branch_id", branchId);
-
-      const achieved = (sales ?? []).reduce(
-        (s, x) => s + Number(x.selling_price) * Number(x.quantity),
-        0,
-      );
-      const target = targets?.[0]?.target_amount ?? 0;
-      return { target, achieved };
-    },
-  });
-
   const cards = [
     {
       label: t.todaySales,
@@ -490,7 +458,7 @@ function Dashboard() {
             <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
               {isOwner
                 ? "Monitor sales, stock, profitability and branch performance from one place."
-                : localized("Reba ibikorwa byawe n'intego zawe.", "Review your activity and sales targets.")}
+                : localized("Reba ibikorwa byawe bya buri munsi.", "Review your daily activity.")}
             </p>
             {!isOwner && branchId && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs font-semibold">
@@ -545,30 +513,6 @@ function Dashboard() {
         />
       )}
 
-      {!isOwner && targetInfo && targetInfo.target > 0 && (
-        <Card className="overflow-hidden border-primary/15 bg-primary/[0.035] shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-sm font-bold">{t.salesTarget}</CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">Today's progress</p>
-              </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                {Math.round(Math.min((targetInfo.achieved / targetInfo.target) * 100, 100))}%
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <p className="text-2xl font-extrabold">{money(targetInfo.achieved)} <span className="text-sm font-medium text-muted-foreground">/ {money(targetInfo.target)}</span></p>
-              <p className="text-xs text-muted-foreground">Remaining: {money(Math.max(targetInfo.target - targetInfo.achieved, 0))}</p>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min((targetInfo.achieved / targetInfo.target) * 100, 100)}%` }} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {!isOwner && (
         <Card>

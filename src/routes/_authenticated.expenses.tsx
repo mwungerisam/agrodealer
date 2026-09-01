@@ -27,7 +27,7 @@ function ExpensesPage() {
   const [form, setForm] = useState({
     branch_id: role?.branch_id ?? "",
     description: "",
-    amount: 0,
+    amount: "",
     expense_date: localDateInput(),
   });
 
@@ -48,15 +48,16 @@ function ExpensesPage() {
     mutationFn: async () => {
       if (!form.branch_id) throw new Error(t.chooseBranch);
       if (!form.description.trim()) throw new Error(t.requiredField);
-      if (form.amount < 0) throw new Error(t.invalidNumber);
-      const { error } = await supabase.from("expenses").insert({ ...form, description: form.description.trim(), amount: Number(form.amount), created_by: user?.id ?? null });
+      const amount = Number(form.amount);
+      if (!form.amount || !Number.isFinite(amount) || amount < 0) throw new Error(t.invalidNumber);
+      const { error } = await supabase.from("expenses").insert({ ...form, description: form.description.trim(), amount, created_by: user?.id ?? null });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success(t.saved);
       qc.invalidateQueries({ queryKey: ["expenses"] });
       setOpen(false);
-      setForm({ ...form, description: "", amount: 0 });
+      setForm({ ...form, description: "", amount: "" });
     },
     onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
@@ -101,7 +102,7 @@ function ExpensesPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t.amount} *</Label>
-                <Input type="number" min={0} value={form.amount} onChange={(e) => setForm({ ...form, amount: +e.target.value })} />
+                <Input type="number" min={0} placeholder="Enter amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.expenseDate} *</Label>

@@ -30,9 +30,9 @@ function PurchasesPage() {
     branch_id: role?.branch_id ?? "",
     product_id: "",
     supplier: "",
-    quantity: 0,
-    buying_price: 0,
-    transport_cost: 0,
+    quantity: "",
+    buying_price: "",
+    transport_cost: "",
     purchase_date: localDateInput(),
   });
 
@@ -68,13 +68,16 @@ function PurchasesPage() {
     mutationFn: async () => {
       if (!form.branch_id) throw new Error(t.chooseBranch);
       if (!form.product_id) throw new Error(t.chooseProduct);
-      if (form.quantity <= 0 || form.buying_price < 0 || form.transport_cost < 0) throw new Error(t.invalidNumber);
+      const quantity = Number(form.quantity);
+      const buyingPrice = Number(form.buying_price);
+      const transportCost = Number(form.transport_cost || 0);
+      if (!form.quantity || !form.buying_price || !Number.isFinite(quantity) || !Number.isFinite(buyingPrice) || !Number.isFinite(transportCost) || quantity <= 0 || buyingPrice < 0 || transportCost < 0) throw new Error(t.invalidNumber);
       if (!form.supplier.trim()) throw new Error(t.requiredField);
       const { error } = await supabase.from("purchases").insert({
         ...form,
-        quantity: Number(form.quantity),
-        buying_price: Number(form.buying_price),
-        transport_cost: Number(form.transport_cost),
+        quantity,
+        buying_price: buyingPrice,
+        transport_cost: transportCost,
         created_by: user?.id ?? null,
       });
       if (error) throw error;
@@ -84,7 +87,7 @@ function PurchasesPage() {
       qc.invalidateQueries({ queryKey: ["purchases"] });
       qc.invalidateQueries({ queryKey: ["inventory"] });
       setOpen(false);
-      setForm({ ...form, product_id: "", supplier: "", quantity: 0, buying_price: 0, transport_cost: 0 });
+      setForm({ ...form, product_id: "", supplier: "", quantity: "", buying_price: "", transport_cost: "" });
     },
     onError: (e: Error) => toast.error(formatErrorMessage(e)),
   });
@@ -118,7 +121,7 @@ function PurchasesPage() {
                 <Label>{t.product} *</Label>
                 <Select value={form.product_id} onValueChange={(v) => {
                   const p: any = products.find((x: any) => x.id === v);
-                  setForm({ ...form, product_id: v, buying_price: p?.buying_price ?? 0 });
+                  setForm({ ...form, product_id: v, buying_price: p?.buying_price ? String(p.buying_price) : "" });
                 }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -132,15 +135,15 @@ function PurchasesPage() {
               </div>
               <div className="space-y-2">
                 <Label>{t.quantity} *</Label>
-                <Input type="number" min={0} step="0.01" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: +e.target.value })} />
+                <Input type="number" min={0} step="0.01" placeholder="Enter quantity" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.buyingPrice} *</Label>
-                <Input type="number" min={0} value={form.buying_price} onChange={(e) => setForm({ ...form, buying_price: +e.target.value })} />
+                <Input type="number" min={0} placeholder="Enter purchase price" value={form.buying_price} onChange={(e) => setForm({ ...form, buying_price: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.transportCost}</Label>
-                <Input type="number" min={0} value={form.transport_cost} onChange={(e) => setForm({ ...form, transport_cost: +e.target.value })} />
+                <Input type="number" min={0} placeholder="Optional" value={form.transport_cost} onChange={(e) => setForm({ ...form, transport_cost: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{t.purchaseDate} *</Label>
