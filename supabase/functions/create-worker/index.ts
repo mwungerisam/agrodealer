@@ -1,9 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+// Keep the live application working even before the optional Supabase secret
+// has been configured. The secret can add further approved origins, such as a
+// local development URL or a custom domain.
+const defaultAllowedOrigins = ["https://ufbcagrodealer-peach.vercel.app"];
+const allowedOrigins = [
+  ...defaultAllowedOrigins,
+  ...(Deno.env.get("ALLOWED_ORIGINS") ?? "")
   .split(",")
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter(Boolean),
+];
 
 function corsHeaders(request: Request): HeadersInit {
   const origin = request.headers.get("Origin");
