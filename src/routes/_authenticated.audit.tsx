@@ -63,13 +63,12 @@ function AuditPage() {
                   <TableHead>Entity</TableHead>
                   <TableHead>{t.branch}</TableHead>
                   <TableHead>User</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                       {t.noData}
                     </TableCell>
                   </TableRow>
@@ -86,11 +85,6 @@ function AuditPage() {
                       <TableCell>{log.branches?.name ?? "—"}</TableCell>
                       <TableCell>
                         {log.profiles?.full_name ?? log.user_id?.slice(0, 8) ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <pre className="max-w-xs overflow-x-auto text-xs">
-                          {JSON.stringify(log.details || {}, null, 0)}
-                        </pre>
                       </TableCell>
                     </TableRow>
                   ))
