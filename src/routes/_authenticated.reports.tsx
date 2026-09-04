@@ -29,10 +29,15 @@ function ReportsPage() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [branchId, setBranchId] = useState<string>(role?.branch_id ?? "all");
 
-  const { data: branches = [] } = useQuery({
+  const branchesQuery = useQuery({
     queryKey: ["branches-all"],
-    queryFn: async () => (await supabase.from("branches").select("id, name").order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
+  const branches = branchesQuery.data ?? [];
 
   const range = tab === "daily"
     ? { from: date, to: date }
@@ -56,7 +61,7 @@ function ReportsPage() {
 
   const branchFilter = isOwner ? (branchId === "all" ? null : branchId) : role?.branch_id ?? null;
 
-  const { data: report } = useQuery({
+  const reportQuery = useQuery({
     queryKey: ["report", tab, range.from, range.to, branchFilter],
     queryFn: async () => {
       const withBranch = <T,>(q: T): T => (branchFilter ? (q as any).eq("branch_id", branchFilter) : q);
@@ -71,7 +76,14 @@ function ReportsPage() {
         supabase.from("expenses").select("description, amount, expense_date, branches(name)").gte("expense_date", range.from).lte("expense_date", range.to).order("expense_date", { ascending: false })
       );
 
-      const [{ data: sales }, { data: purchases }, { data: expenses }] = await Promise.all([salesQ, purchQ, expQ]);
+      const [salesResult, purchasesResult, expensesResult] = await Promise.all([salesQ, purchQ, expQ]);
+      if (salesResult.error) throw salesResult.error;
+      if (purchasesResult.error) throw purchasesResult.error;
+      if (expensesResult.error) throw expensesResult.error;
+
+      const sales = salesResult.data;
+      const purchases = purchasesResult.data;
+      const expenses = expensesResult.data;
 
       const totalSales = (sales ?? []).reduce((s, x) => s + Number(x.selling_price) * Number(x.quantity), 0);
       const totalProfit = (sales ?? []).reduce((s, x) => s + Number(x.profit), 0);
@@ -93,6 +105,23 @@ function ReportsPage() {
       };
     },
   });
+  const report = reportQuery.data;
+
+  if (branchesQuery.isError || reportQuery.isError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{t.reports}</h1>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-sm text-muted-foreground">{t.errorGeneric}</p>
+            <Button variant="outline" onClick={() => { void branchesQuery.refetch(); void reportQuery.refetch(); }}>
+              {t.tryAgain}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const doDownload = () => {
     if (!report) return;
@@ -173,14 +202,14 @@ function ReportsPage() {
                     </Select>
                   </div>
                 )}
-                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
+                <Button onClick={doDownload} disabled={!report}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
               </div>
             </TabsContent>
             <TabsContent value="weekly" className="mt-4">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-2"><Label>{t.weekOf}</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
                 {isOwner && <div className="space-y-2"><Label>{t.branch}</Label><Select value={branchId} onValueChange={setBranchId}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t.allBranches}</SelectItem>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>}
-                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
+                <Button onClick={doDownload} disabled={!report}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
               </div>
             </TabsContent>
             <TabsContent value="monthly" className="mt-4">
@@ -201,14 +230,14 @@ function ReportsPage() {
                     </Select>
                   </div>
                 )}
-                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
+                <Button onClick={doDownload} disabled={!report}><Download className="mr-2 h-4 w-4" /> {t.downloadPdf}</Button>
               </div>
             </TabsContent>
             <TabsContent value="annual" className="mt-4">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="space-y-2"><Label>{t.year}</Label><Input type="number" min="2000" max="2100" value={year} onChange={(e) => setYear(e.target.value)} /></div>
                 {isOwner && <div className="space-y-2"><Label>{t.branch}</Label><Select value={branchId} onValueChange={setBranchId}><SelectTrigger className="w-48"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t.allBranches}</SelectItem>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div>}
-                <Button onClick={doDownload}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
+                <Button onClick={doDownload} disabled={!report}><Download className="mr-2 h-4 w-4" />{t.downloadPdf}</Button>
               </div>
             </TabsContent>
           </Tabs>

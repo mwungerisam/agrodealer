@@ -14,7 +14,7 @@ import { t, formatAuthError } from "@/lib/i18n";
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
 function AuthPage() {
-  const { user, loading: authLoading, unavailable } = useAuth();
+  const { user, loading: authLoading, unavailable, role } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"owner" | "worker">("owner");
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
@@ -23,14 +23,45 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const resolveUserRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .limit(1);
+
+    const firstRole = data?.[0]?.role ?? null;
+    if (firstRole) return firstRole as "owner" | "worker" | string;
+
+    return null;
+  };
+
   useEffect(() => {
-    if (user && !authLoading) navigate({ to: "/dashboard", replace: true });
-  }, [user, authLoading, navigate]);
+    if (!user || authLoading || !role?.role) return;
+
+    const portalMatchesRole =
+      (role.role === "owner" && tab === "owner") ||
+      (role.role !== "owner" && tab === "worker");
+
+    if (portalMatchesRole) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [user, authLoading, role, tab, navigate]);
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.12),_transparent_38%),linear-gradient(135deg,#f8fafc_0%,#eef8f1_100%)] px-4">
+        <div className="flex flex-col items-center gap-5 rounded-[28px] border border-border/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-lime-500 shadow-lg shadow-emerald-500/25">
+            <div className="absolute inset-1 rounded-xl border border-white/30" />
+            <Loader2 className="relative h-7 w-7 animate-spin text-white" />
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-700/90">UFBC AGRODEALER</p>
+            <h2 className="mt-2 text-lg font-semibold text-slate-900">Preparing your workspace</h2>
+            <p className="mt-1 text-sm text-slate-500">Checking your secure session…</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -40,18 +71,27 @@ function AuthPage() {
     e.preventDefault();
     const cleanEmail = email.trim();
     if (!cleanEmail || !password) return toast.error(t.requiredField);
+
     setBusy(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setBusy(false);
+
     if (error) return toast.error(formatAuthError(error));
+
     if (data?.session && data.user) {
-      const { data: userRole } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
+      const userRole = await resolveUserRole(data.user.id);
       const expectsOwner = tab === "owner";
-      if ((expectsOwner && userRole?.role !== "owner") || (!expectsOwner && userRole?.role === "owner")) {
-        await supabase.auth.signOut();
+
+      if (!userRole) {
+        toast.error("Your account is still being configured. Please contact the business owner.");
+        return;
+      }
+
+      if ((expectsOwner && userRole !== "owner") || (!expectsOwner && userRole === "owner")) {
         toast.error(t.wrongPortal);
         return;
       }
+
       toast.success(t.welcome);
       navigate({ to: "/dashboard", replace: true });
     }

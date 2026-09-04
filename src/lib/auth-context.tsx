@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
@@ -28,37 +28,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRoleInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
+  const lastKnownSessionRef = useRef<Session | null>(null);
 
   const loadRole = async (uid: string) => {
     try {
-      let { data } = await supabase
+      let record: { role: AppRole; branch_id: string | null } | null = null;
+
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role, branch_id")
         .eq("user_id", uid)
-        .maybeSingle();
+        .limit(1);
 
-      if (!data) {
-        try {
-          await (supabase.rpc as any)("ensure_user_role");
-          const { data: retry } = await supabase
-            .from("user_roles")
-            .select("role, branch_id")
-            .eq("user_id", uid)
-            .maybeSingle();
-          data = retry ?? null;
-        } catch {
-          // Fallback if the role helper is unavailable
-        }
+      if (error && error.code !== "PGRST116") {
+        throw error;
       }
 
+      record = data?.[0] ?? null;
+
+      if (!record) {
+        setRole(null);
+        setUnavailable(true);
+        return;
+      }
 
       setRole(
-        data
-          ? { role: data.role as AppRole, branch_id: data.branch_id }
-          : { role: null, branch_id: null },
+        { role: record.role as AppRole, branch_id: record.branch_id },
       );
+      setUnavailable(false);
     } catch {
       setRole({ role: null, branch_id: null });
+      setUnavailable(true);
     }
   };
 
@@ -70,33 +70,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }, 12_000);
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const applySession = (nextSession: Session | null) => {
       if (!active) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      setUnavailable(false);
-      if (s?.user) {
-        setTimeout(() => loadRole(s.user.id), 0);
-      } else {
+
+      if (!nextSession?.user) {
+        if (lastKnownSessionRef.current?.user) {
+          return;
+        }
+
+        lastKnownSessionRef.current = null;
+        setSession(null);
+        setUser(null);
         setRole(null);
+        setLoading(false);
+        return;
       }
+
+      lastKnownSessionRef.current = nextSession;
+      setSession(nextSession);
+      setUser(nextSession.user);
+      setUnavailable(false);
+      setLoading(true);
+
+      void loadRole(nextSession.user.id).finally(() => {
+        if (active) setLoading(false);
+      });
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (!active) return;
+
+      if (event === "SIGNED_OUT") {
+        lastKnownSessionRef.current = null;
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      if (!s?.user) {
+        lastKnownSessionRef.current = null;
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      applySession(s);
     });
 
     supabase.auth
       .getSession()
       .then(({ data }) => {
         if (!active) return;
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        if (data.session?.user) {
-          loadRole(data.session.user.id).finally(() => active && setLoading(false));
-        } else {
-          setLoading(false);
-        }
+        applySession(data.session);
       })
       .catch(() => {
         if (!active) return;
         setUnavailable(true);
+        setSession(null);
+        setUser(null);
+        setRole(null);
         setLoading(false);
       })
       .finally(() => window.clearTimeout(startupTimeout));

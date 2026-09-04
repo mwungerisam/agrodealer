@@ -47,13 +47,19 @@ function SalesPage() {
     sale_date: localDateInput(),
   });
 
-  // Default branch for worker
   const defaultBranch = isOwner ? "" : workerBranchId ?? "";
+  const effectiveBranchId = isOwner ? form.branch_id : workerBranchId ?? "";
+  const branchAccessError = !isOwner && !workerBranchId
+    ? "Your account is not assigned to a branch yet. Please contact the owner."
+    : null;
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
-    queryFn: async () =>
-      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: products = [] } = useQuery<SaleProduct[]>({
@@ -80,15 +86,16 @@ function SalesPage() {
   const selectedProduct = products.find((p) => p.id === form.product_id);
 
   const { data: stock } = useQuery({
-    queryKey: ["stock-for-sale", form.branch_id, form.product_id],
-    enabled: !!form.branch_id && !!form.product_id,
+    queryKey: ["stock-for-sale", effectiveBranchId, form.product_id],
+    enabled: !!effectiveBranchId && !!form.product_id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory")
         .select("quantity")
-        .eq("branch_id", form.branch_id)
+        .eq("branch_id", effectiveBranchId)
         .eq("product_id", form.product_id)
         .maybeSingle();
+      if (error) throw error;
       return data ?? { quantity: 0 };
     },
   });
@@ -123,7 +130,7 @@ function SalesPage() {
   const availableStock = Number(stock?.quantity ?? 0);
 
   const canSave = () => {
-    if (!form.branch_id) return t.chooseBranch;
+    if (!effectiveBranchId) return branchAccessError ?? t.chooseBranch;
     if (!form.product_id) return t.chooseProduct;
     if (qty <= 0) return t.invalidNumber;
     if (!customerName.trim()) return t.customerRequired;
@@ -138,10 +145,11 @@ function SalesPage() {
 
       const cleanCustomerName = customerName.trim();
       const cleanCustomerPhone = customerPhone.trim() || null;
+      const targetBranchId = effectiveBranchId;
       const { data: matchingCustomers, error: lookupError } = await supabase
         .from("customers")
         .select("id, phone")
-        .eq("branch_id", form.branch_id)
+        .eq("branch_id", targetBranchId)
         .eq("name", cleanCustomerName)
         .limit(20);
       if (lookupError) throw lookupError;
@@ -150,7 +158,7 @@ function SalesPage() {
       if (!customerId) {
         const { data: createdCustomer, error: customerError } = await supabase
           .from("customers")
-          .insert({ name: cleanCustomerName, phone: cleanCustomerPhone, branch_id: form.branch_id, created_by: user?.id ?? null })
+          .insert({ name: cleanCustomerName, phone: cleanCustomerPhone, branch_id: targetBranchId, created_by: user?.id ?? null })
           .select("id")
           .single();
         if (customerError) throw customerError;
@@ -158,7 +166,7 @@ function SalesPage() {
       }
 
       const { error } = await supabase.from("sales").insert({
-        branch_id: form.branch_id,
+        branch_id: targetBranchId,
         product_id: form.product_id,
         quantity: qty,
         selling_price: unitPrice,
@@ -201,6 +209,10 @@ function SalesPage() {
   };
 
   const openNew = () => {
+    if (!isOwner && !workerBranchId) {
+      toast.error("Your account is not assigned to a branch yet. Please contact the owner.");
+      return;
+    }
     resetForm();
     setOpen(true);
   };
@@ -214,7 +226,7 @@ function SalesPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew} disabled={branches.length === 0 || products.length === 0}>
+            <Button onClick={openNew} disabled={branches.length === 0 || products.length === 0 || (!isOwner && !workerBranchId)}>
               <Plus className="mr-2 h-4 w-4" /> {t.add}
             </Button>
           </DialogTrigger>

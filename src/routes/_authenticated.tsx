@@ -28,23 +28,44 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, unavailable, refreshRole, signOut } = useAuth();
   const isOwner = useIsOwner();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.12),_transparent_38%),linear-gradient(135deg,#f8fafc_0%,#eef8f1_100%)] px-4">
+        <div className="flex flex-col items-center gap-5 rounded-[28px] border border-border/70 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-lime-500 shadow-lg shadow-emerald-500/25">
+            <div className="absolute inset-1 rounded-xl border border-white/30" />
+            <Loader2 className="relative h-7 w-7 animate-spin text-white" />
           </div>
-          <span className="text-sm">Loading UFBC Agrodealer…</span>
+          <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-700/90">UFBC AGRODEALER</p>
+            <h2 className="mt-2 text-lg font-semibold text-slate-900">Loading your dashboard</h2>
+            <p className="mt-1 text-sm text-slate-500">Syncing your secure workspace…</p>
+          </div>
         </div>
       </div>
     );
   }
   if (!user) return <Navigate to="/auth" replace />;
+  if (unavailable) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/25 px-4">
+        <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-sm">
+          <h1 className="text-xl font-bold text-foreground">Workspace unavailable</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We could not verify your access right now. Check your connection and try again.
+          </p>
+          <div className="mt-6 flex justify-center gap-2">
+            <Button variant="outline" onClick={() => void refreshRole()}>Try again</Button>
+            <Button onClick={() => void signOut()}>{t.signOut}</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const workerNav = [
     { to: "/dashboard", label: t.dashboard, icon: LayoutDashboard },
@@ -101,6 +122,7 @@ function AuthenticatedLayout() {
                 <Link
                   key={item.to}
                   to={item.to}
+                    aria-current={active ? "page" : undefined}
                   className={`group flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all ${
                     active
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
@@ -179,13 +201,14 @@ function AuthenticatedLayout() {
         </header>
 
         <div className="h-14 md:hidden" />
-        <div className="scrollbar-none sticky top-14 z-30 flex overflow-x-auto border-b bg-background/95 px-2 backdrop-blur md:hidden">
+        <nav aria-label="Primary navigation" className="scrollbar-none sticky top-14 z-30 flex overflow-x-auto border-b bg-background/95 px-2 backdrop-blur md:hidden">
           {nav.map((item) => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
               <Link
                 key={item.to}
                 to={item.to}
+                aria-current={active ? "page" : undefined}
                 className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 text-xs font-semibold transition-colors ${
                   active ? "border-primary text-primary" : "border-transparent text-muted-foreground"
                 }`}
@@ -195,7 +218,7 @@ function AuthenticatedLayout() {
               </Link>
             );
           })}
-        </div>
+        </nav>
         <div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8">
           <Outlet />
         </div>

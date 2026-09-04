@@ -63,10 +63,11 @@ function ProductsPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .select("id, name, category, buying_price, selling_price, unit, min_stock, status")
         .order("name");
+      if (error) throw error;
       return (data ?? []) as Product[];
     },
   });

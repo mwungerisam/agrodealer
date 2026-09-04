@@ -45,24 +45,23 @@ function CustomersPage() {
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
-    queryFn: async () =>
-      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers"],
     staleTime: 60_000,
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("customers")
-          .select("id, branch_id, name, phone, created_at, branches(name)")
-          .order("created_at", { ascending: false });
-        if (error) return [];
-        return (data ?? []) as Customer[];
-      } catch {
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, branch_id, name, phone, created_at, branches(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Customer[];
     },
   });
 

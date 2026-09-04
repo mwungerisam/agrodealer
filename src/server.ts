@@ -9,14 +9,49 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
-function withSecurityHeaders(response: Response): Response {
+function withSecurityHeaders(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
+
+  if (request.url.startsWith("https://")) {
+    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+
+  if (process.env.NODE_ENV === "production" && response.headers.get("content-type")?.includes("text/html")) {
+    const supabaseOrigin = getSupabaseOrigin();
+    headers.set(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data: blob:",
+        `connect-src 'self' ${supabaseOrigin} wss://*.supabase.co`,
+      ].join("; "),
+    );
+  }
+
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function getSupabaseOrigin(): string {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  if (!supabaseUrl) return "https://*.supabase.co";
+
+  try {
+    return new URL(supabaseUrl).origin;
+  } catch {
+    return "https://*.supabase.co";
+  }
 }
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -59,13 +94,13 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response), request);
     } catch (error) {
       console.error(error);
       return withSecurityHeaders(new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
-      }));
+      }), request);
     }
   },
 };

@@ -30,8 +30,6 @@ import { OwnerEveningReminder } from "@/components/owner-evening-reminder";
 import { localDateInput } from "@/lib/utils";
 import { toast } from "sonner";
 
-const DASHBOARD_STOCK_WARNING_LEVEL = 1_000;
-
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
@@ -75,7 +73,8 @@ function Dashboard() {
         .select("quantity, selling_price, profit")
         .eq("sale_date", today);
       if (!isOwner && branchId) todaySalesQ.eq("branch_id", branchId);
-      const { data: sales } = await todaySalesQ;
+      const { data: sales, error: salesError } = await todaySalesQ;
+      if (salesError) throw salesError;
 
       const invQ = supabase
         .from("inventory")
@@ -83,7 +82,8 @@ function Dashboard() {
           ? "branch_id, product_id, quantity, avg_cost, products(name, unit, min_stock), branches(name)"
           : "branch_id, product_id, quantity, avg_cost");
       if (!isOwner && branchId) invQ.eq("branch_id", branchId);
-      const { data: inventoryRows } = await invQ;
+      const { data: inventoryRows, error: inventoryError } = await invQ;
+      if (inventoryError) throw inventoryError;
       let inv = inventoryRows ?? [];
 
       if (!isOwner) {
@@ -95,14 +95,21 @@ function Dashboard() {
         inv = inv.map((item) => ({ ...item, products: productMap.get(item.product_id) }));
       }
 
-      const branches = isOwner ? ((await supabase.from("branches").select("id")).data ?? []) : [];
-      const products = isOwner
-        ? (await supabase.from("products").select("id")).data ?? []
-        : (await supabase.from("worker_products").select("id")).data ?? [];
-      const workers = isOwner ? ((await supabase.from("user_roles").select("id")).data ?? []) : [];
+      const branchesResult = isOwner ? await supabase.from("branches").select("id") : null;
+      if (branchesResult?.error) throw branchesResult.error;
+      const productsResult = isOwner
+        ? await supabase.from("products").select("id")
+        : await supabase.from("worker_products").select("id");
+      if (productsResult.error) throw productsResult.error;
+      const workersResult = isOwner ? await supabase.from("user_roles").select("id") : null;
+      if (workersResult?.error) throw workersResult.error;
+      const branches = branchesResult?.data ?? [];
+      const products = productsResult.data ?? [];
+      const workers = workersResult?.data ?? [];
       const expensesQ = supabase.from("expenses").select("amount").eq("expense_date", today);
       if (!isOwner && branchId) expensesQ.eq("branch_id", branchId);
-      const { data: exp } = await expensesQ;
+      const { data: exp, error: expensesError } = await expensesQ;
+      if (expensesError) throw expensesError;
 
       const todaySales = (sales ?? []).reduce(
         (s, x) => s + Number(x.selling_price) * Number(x.quantity),
@@ -115,11 +122,12 @@ function Dashboard() {
         (s, x) => s + Number(x.quantity) * Number(x.avg_cost ?? 0),
         0,
       );
-      const lowStock = (inv ?? []).filter((item) => Number(item.quantity) < DASHBOARD_STOCK_WARNING_LEVEL);
+      const lowStock = (inv ?? []).filter((item) => Number(item.quantity) <= Number((item.products as { min_stock?: number } | null)?.min_stock ?? 0));
 
-      const branchName = !isOwner && branchId
-        ? ((await supabase.from("branches").select("name").eq("id", branchId).maybeSingle()).data?.name ?? "")
-        : "";
+      const branchResult = !isOwner && branchId
+        ? await supabase.from("branches").select("name").eq("id", branchId).maybeSingle()
+        : null;
+      if (branchResult?.error) throw branchResult.error;
 
       return {
         todaySales,
@@ -134,7 +142,7 @@ function Dashboard() {
         branchCount: branches.length,
         productCount: products.length,
         workerCount: workers.length,
-        branchName,
+        branchName: branchResult?.data?.name ?? "",
       };
     },
   });
@@ -398,7 +406,7 @@ function Dashboard() {
         supabase.from("sales").select("quantity, selling_price, profit, sale_date, customer_name, products(name), branches(name)").gte("sale_date", from).lte("sale_date", to).order("sale_date", { ascending: false }),
         supabase.from("purchases").select("quantity, buying_price, transport_cost, supplier, purchase_date, products(name), branches(name)").gte("purchase_date", from).lte("purchase_date", to).order("purchase_date", { ascending: false }),
         supabase.from("expenses").select("description, amount, expense_date, branches(name)").gte("expense_date", from).lte("expense_date", to).order("expense_date", { ascending: false }),
-        supabase.from("inventory").select("quantity, products(name, unit), branches(name)").order("quantity", { ascending: true }),
+        supabase.from("inventory").select("quantity, products(name, unit, min_stock), branches(name)").order("quantity", { ascending: true }),
       ]);
       if (salesError) throw salesError;
       if (purchasesError) throw purchasesError;
@@ -433,7 +441,8 @@ function Dashboard() {
         expenses: (expenses ?? []).map((expense) => ({ date: expense.expense_date, branch: expense.branches?.name ?? "Unassigned branch", description: expense.description, amount: Number(expense.amount) })),
         inventory: (inventory ?? []).map((item) => {
           const quantity = Number(item.quantity);
-          return { branch: item.branches?.name ?? "Unassigned branch", product: item.products?.name ?? "Product", quantity, unit: item.products?.unit ?? "", status: quantity < DASHBOARD_STOCK_WARNING_LEVEL ? "Low stock" : "In stock" };
+          const minimum = Number(item.products?.min_stock ?? 0);
+          return { branch: item.branches?.name ?? "Unassigned branch", product: item.products?.name ?? "Product", quantity, unit: item.products?.unit ?? "", status: quantity <= 0 ? "Out of stock" : quantity <= minimum ? "Low stock" : "In stock" };
         }),
         totals,
         branchPerformance: [...branchMap.values()].sort((a, b) => b.revenue - a.revenue),
@@ -529,8 +538,8 @@ function Dashboard() {
                 {stats.inventory.map((item) => {
                   const quantity = Number(item.quantity);
                   const minimum = Number((item.products as { min_stock?: number } | null)?.min_stock ?? 0);
-                  const status = quantity <= 0 ? "Out of stock" : quantity < DASHBOARD_STOCK_WARNING_LEVEL ? "Low stock" : "In stock";
-                  const statusClass = quantity <= 0 ? "bg-red-100 text-red-800" : quantity < DASHBOARD_STOCK_WARNING_LEVEL ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800";
+                  const status = quantity <= 0 ? "Out of stock" : quantity <= minimum ? "Low stock" : "In stock";
+                  const statusClass = quantity <= 0 ? "bg-red-100 text-red-800" : quantity <= minimum ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800";
                   return (
                     <div key={`${item.branch_id}-${item.product_id}`} className="flex items-center justify-between gap-4 px-5 py-3.5">
                       <div className="flex min-w-0 items-center gap-3">

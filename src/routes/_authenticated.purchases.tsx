@@ -39,7 +39,8 @@ function PurchasesPage() {
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
     queryFn: async () => {
-      const { data } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      const { data, error } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -47,7 +48,8 @@ function PurchasesPage() {
   const { data: products = [] } = useQuery({
     queryKey: ["products-active"],
     queryFn: async () => {
-      const { data } = await supabase.from("products").select("id, name, unit, buying_price").eq("status", true).order("name");
+      const { data, error } = await supabase.from("products").select("id, name, unit, buying_price").eq("status", true).order("name");
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -55,11 +57,12 @@ function PurchasesPage() {
   const { data: purchases = [] } = useQuery({
     queryKey: ["purchases"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("purchases")
         .select("id, quantity, buying_price, transport_cost, supplier, purchase_date, products(name, unit), branches(name)")
         .order("purchase_date", { ascending: false })
         .limit(200);
+      if (error) throw error;
       return data ?? [];
     },
   });

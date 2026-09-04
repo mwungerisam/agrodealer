@@ -69,16 +69,20 @@ function TransfersPage() {
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
-    queryFn: async () =>
-      (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ??
-      [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ["products-active"],
-    queryFn: async () =>
-      (await supabase.from("products").select("id, name, unit").eq("status", true).order("name"))
-        .data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("id, name, unit").eq("status", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   // Inventory at the source branch for the selected product
@@ -86,12 +90,13 @@ function TransfersPage() {
     queryKey: ["transfer-stock", form.from_branch, form.product_id],
     enabled: !!form.from_branch && !!form.product_id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory")
         .select("quantity, avg_cost")
         .eq("branch_id", form.from_branch)
         .eq("product_id", form.product_id)
         .maybeSingle();
+      if (error) throw error;
       return data ?? { quantity: 0, avg_cost: 0 };
     },
   });
@@ -101,7 +106,7 @@ function TransfersPage() {
     queryKey: ["transfer-movements"],
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("inventory_movements")
         .select(
           "id, branch_id, product_id, type, quantity, ref_type, created_at, products(name, unit), branches(name)",
@@ -109,6 +114,7 @@ function TransfersPage() {
         .eq("ref_type", "transfer")
         .order("created_at", { ascending: false })
         .limit(200);
+      if (error) throw error;
       return (data ?? []) as Movement[];
     },
   });

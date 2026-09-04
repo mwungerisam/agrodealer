@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,15 +31,22 @@ function ExpensesPage() {
     expense_date: localDateInput(),
   });
 
+  if (role && !isOwner) return <Navigate to="/dashboard" replace />;
+
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-active"],
-    queryFn: async () => (await supabase.from("branches").select("id, name").eq("status", true).order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").eq("status", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses"],
     queryFn: async () => {
-      const { data } = await supabase.from("expenses").select("id, description, amount, expense_date, branches(name)").order("expense_date", { ascending: false }).limit(200);
+      const { data, error } = await supabase.from("expenses").select("id, description, amount, expense_date, branches(name)").order("expense_date", { ascending: false }).limit(200);
+      if (error) throw error;
       return data ?? [];
     },
   });

@@ -76,7 +76,11 @@ function UsersPage() {
 
   const { data: branches = [] } = useQuery({
     queryKey: ["branches-all"],
-    queryFn: async () => (await supabase.from("branches").select("id, name").order("name")).data ?? [],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("branches").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
   const updateRow = useMutation({

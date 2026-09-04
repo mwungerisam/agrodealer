@@ -56,7 +56,7 @@ function InventoryPage() {
 
   const totalItems = inventory.length;
   const totalValue = inventory.reduce(
-    (s: number, i: any) => s + Number(i.quantity) * Number(i.products?.buying_price ?? 0),
+    (s: number, i: any) => s + Number(i.quantity) * Number(i.avg_cost ?? 0),
     0,
   );
   const lowCount = inventory.filter(

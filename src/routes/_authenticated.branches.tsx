@@ -46,10 +46,11 @@ function BranchesPage() {
     queryKey: ["branches"],
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("branches")
         .select("id, name, phone, address, status, created_at")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data ?? []) as Branch[];
     },
   });

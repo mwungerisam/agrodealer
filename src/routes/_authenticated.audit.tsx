@@ -26,19 +26,29 @@ function AuditPage() {
     queryKey: ["audit-log"],
     staleTime: 60_000,
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("audit_log")
-          .select(
-            "action, entity, entity_id, branch_id, user_id, created_at, details, branches(name)",
-          )
-          .order("created_at", { ascending: false })
-          .limit(500);
-        if (error) return [];
-        return data ?? [];
-      } catch {
-        return [];
-      }
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select(
+          "id, action, entity, entity_id, branch_id, user_id, created_at, details, branches(name)",
+        )
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+
+      const userIds = [...new Set((data ?? []).map((log) => log.user_id).filter(Boolean))];
+      if (userIds.length === 0) return data ?? [];
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      if (profilesError) throw profilesError;
+
+      const names = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+      return (data ?? []).map((log) => ({
+        ...log,
+        profile_name: log.user_id ? names.get(log.user_id) ?? null : null,
+      }));
     },
   });
 
@@ -73,8 +83,8 @@ function AuditPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  logs.map((log: any, i: number) => (
-                    <TableRow key={log.id ?? i}>
+                  logs.map((log) => (
+                    <TableRow key={log.id}>
                       <TableCell className="text-xs">{fmtDateTime(log.created_at)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
@@ -84,7 +94,7 @@ function AuditPage() {
                       <TableCell className="font-medium">{log.entity}</TableCell>
                       <TableCell>{log.branches?.name ?? "—"}</TableCell>
                       <TableCell>
-                        {log.profiles?.full_name ?? log.user_id?.slice(0, 8) ?? "—"}
+                        {log.profile_name ?? log.user_id?.slice(0, 8) ?? "—"}
                       </TableCell>
                     </TableRow>
                   ))
